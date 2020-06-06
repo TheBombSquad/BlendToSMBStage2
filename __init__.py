@@ -117,13 +117,16 @@ def load_handler(dummy):
             diffuse_node = None
 
             for node in nodes:
-                if (node.type =='OUTPUT_MATERIAL'):
+                if (node.type == 'BSDF_PRINCIPLED'):
+                    continue
+                elif (node.type =='OUTPUT_MATERIAL'):
                     material_output_node = node
                 elif (node.type == 'TEX_IMAGE'):
                     image_texture_node = node
                 elif (node.type =='BSDF_DIFFUSE'):
                     diffuse_node = node
                 else:
+                    print("Removing extraneous node" + str(node))
                     nodes.remove(node)
 
             # Convert Diffuse BSDF nodes to Principled BSDF
