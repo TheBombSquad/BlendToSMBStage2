@@ -412,7 +412,8 @@ class OBJECT_OT_export_obj(bpy.types.Operator):
         print("Exporting OBJ...")
         bpy.ops.export_scene.obj(
                 filepath = bpy.path.abspath(context.scene.export_model_path),
-                use_triangles=True
+                use_triangles=True,
+                path_mode="RELATIVE",
             )
 
         # Restore original position and animation
