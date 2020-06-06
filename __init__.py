@@ -107,6 +107,38 @@ def load_handler(dummy):
             if obj.name.startswith(desc.get_object_name()):
                 desc.rna_ui_setup(obj)
 
+    for mat in bpy.data.materials:
+        if (mat.use_nodes):
+            nodes = mat.node_tree.nodes
+            links = mat.node_tree.links
+
+            material_output_node = None
+            image_texture_node = None
+            diffuse_node = None
+
+            for node in nodes:
+                if (node.type =='OUTPUT_MATERIAL'):
+                    material_output_node = node
+                elif (node.type == 'TEX_IMAGE'):
+                    image_texture_node = node
+                elif (node.type =='BSDF_DIFFUSE'):
+                    diffuse_node = node
+                else:
+                    nodes.remove(node)
+
+            # Convert Diffuse BSDF nodes to Principled BSDF
+            if diffuse_node is not None:
+                print("Converting material " + mat.name + " diffuse BSDF node to principled BSDF...")
+                nodes.remove(diffuse_node)
+                principled_node = nodes.new("ShaderNodeBsdfPrincipled")
+                links.new(material_output_node.inputs['Surface'], principled_node.outputs['BSDF'])
+                links.new(principled_node.inputs['Base Color'], image_texture_node.outputs['Color'])
+                principled_node.inputs['Specular'].default_value = 0.0
+
+        # Enable backface culling for all materials
+        if hasattr(mat, 'use_backface_culling'):
+            mat.use_backface_culling = True
+
 # Register
 def register():
     try:
