@@ -346,10 +346,10 @@ class DescriptorBG(DescriptorBase):
     def generate_xml(parent_element, obj):
         print("\tBackground model: " + obj.name)
         
-        if obj.animation_data is None:
-            bg = generate_generic_obj_element(obj, "backgroundModel", parent_element, name=False)
+        if obj.animation_data is not None and obj.animation_data.action is not None:
+            bg = generate_generic_obj_element(obj, "backgroundModel", parent_element, position=True, rotation=True, scale=True, name=False)
         else:
-            bg = generate_generic_obj_element(obj, "backgroundModel", parent_element, position=True, rotation=True, name=False)
+            bg = generate_generic_obj_element(obj, "backgroundModel", parent_element, name=False)
 
         if obj.data == None or obj.name == obj.data.name:
             if "[EXT:" in obj.name:
@@ -375,7 +375,7 @@ class DescriptorBG(DescriptorBase):
         if "texScrollUSpeed" in obj.keys():
             texScroll = etree.SubElement(bg, "textureScroll", x=str(obj["texScrollUSpeed"]),
                                                                y=str(obj["texScrollVSpeed"]))
-        if obj.animation_data is not None: addAnimation(obj, bg)
+        if obj.animation_data is not None and obj.animation_data.action is not None: addAnimation(obj, bg)
 
     @staticmethod
     def construct(obj):
@@ -396,7 +396,10 @@ class DescriptorFG(DescriptorBase):
     def generate_xml(parent_element, obj):
         print("\tForeground model: " + obj.name)
         
-        fg = generate_generic_obj_element(obj, "foregroundModel", parent_element, position=True, rotation=True, name=False)
+        if obj.animation_data is not None and obj.animation_data.action is not None:
+            fg = generate_generic_obj_element(obj, "foregroundModel", parent_element, position=True, rotation=True, scale=True, name=False)
+        else:
+            fg = generate_generic_obj_element(obj, "foregroundModel", parent_element, name=False)
 
         if obj.data == None or obj.name == obj.data.name:
             if "[EXT:" in obj.name:
@@ -422,7 +425,8 @@ class DescriptorFG(DescriptorBase):
         if "texScrollUSpeed" in obj.keys():
             texScroll = etree.SubElement(fg, "textureScroll", x=str(obj["texScrollUSpeed"]),
                                                                y=str(obj["texScrollVSpeed"]))
-        if obj.animation_data is not None: addAnimation(obj, fg)
+
+        if obj.animation_data is not None and obj.animation_data.action is not None: addAnimation(obj, fg)
 
     @staticmethod
     def construct(obj):

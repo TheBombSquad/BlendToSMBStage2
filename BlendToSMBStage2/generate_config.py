@@ -128,7 +128,7 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
             if "[IG]" in obj.name: 
                 igs.append(obj)
                 context.scene.frame_set(begin_frame)
-                print("\tInserted frame zero keyframe for " + obj.name + ": Position: " + str(obj.location))
+                print("\tInserted frame zero keyframe for item group " + obj.name + ": Position: " + str(obj.location))
                 obj.keyframe_insert("location", frame=begin_frame, options={'INSERTKEY_NEEDED'}) 
                 obj.keyframe_insert("rotation_euler", frame=begin_frame, options={'INSERTKEY_NEEDED'})
             for desc in descriptors.descriptors_nonig:

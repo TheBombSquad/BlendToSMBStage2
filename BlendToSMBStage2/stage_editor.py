@@ -370,9 +370,9 @@ class OBJECT_OT_export_obj(bpy.types.Operator):
         orig_pos_rot_scale = [{}, {}, {}]
 
         for obj in bg_fg_models:
-            print("\tMoving BG/FG object " + obj.name + " to origin for export")
-            orig_matrix_dict[obj.name] = copy.copy(obj.matrix_world)
             if obj.animation_data is not None and obj.animation_data.action is not None:
+                orig_matrix_dict[obj.name] = copy.copy(obj.matrix_world)
+                print("\tMoving object " + obj.name + " to origin for export")
                 fcurves  = obj.animation_data.action.fcurves
                 orig_pos = [None, None, None]
                 orig_rot = [None, None, None]
@@ -380,19 +380,47 @@ class OBJECT_OT_export_obj(bpy.types.Operator):
 
                 # Position keyframes
                 for index in [0, 1, 2]:
+                    # Find location fcurve for current channel (X, Y, Z position)
                     fcurve = fcurves.find("location", index=index)
                     if fcurve is not None:
-                        orig_pos[index] = fcurve.keyframe_points[0].co[1]
-                        fcurve.keyframe_points[0].co[1] = 0
+                        default_keyframe_point = -1
+                        # Look for a keyframe that exists on the currently selected frame
+                        for keyframe_index in range(len(fcurve.keyframe_points)):
+                            if fcurve.keyframe_points[keyframe_index].co[0] == float(origin_frame):
+                                default_keyframe_point = keyframe_index
+                                break
+
+                        # If a keyframe already exists on the currently selected frame, set its value to 0
+                        if default_keyframe_point != -1:
+                            orig_pos[index] = obj.location[index]
+                            fcurve.keyframe_points[default_keyframe_point].co[1] = 0
+
+                        # Otherwise, create a new keyframe and set its value to zero
+                        else:
+                            obj.location[index] = 0
+                            obj.keyframe_insert("location", index=index, frame=origin_frame)
 
                 orig_pos_rot_scale[0][obj.name] = orig_pos
-                
+
                 # Rotation keyframes
                 for index in [0, 1, 2]:
                     fcurve = fcurves.find("rotation_euler", index=index)
                     if fcurve is not None:
-                        orig_rot[index] = fcurve.keyframe_points[0].co[1]
-                        fcurve.keyframe_points[0].co[1] = 0
+                        default_keyframe_point = -1
+                        # Look for a keyframe that exists on the currently selected frame
+                        for keyframe_index in range(len(fcurve.keyframe_points)):
+                            if fcurve.keyframe_points[keyframe_index].co[0] == float(origin_frame):
+                                default_keyframe_point = keyframe_index
+                                break
+
+                        # If a keyframe already exists on the currently selected frame, set its value to 0
+                        if default_keyframe_point != -1:
+                            orig_rot[index] = obj.rotation_euler[index]
+                            fcurve.keyframe_points[default_keyframe_point].co[1] = 0
+
+                        else:
+                            obj.rotation_euler[index] = 0
+                            obj.keyframe_insert("rotation_euler", index=index, frame=origin_frame)
 
                 orig_pos_rot_scale[1][obj.name] = orig_rot
 
@@ -400,14 +428,27 @@ class OBJECT_OT_export_obj(bpy.types.Operator):
                 for index in [0, 1, 2]:
                     fcurve = fcurves.find("scale", index=index)
                     if fcurve is not None:
-                        orig_scale[index] = fcurve.keyframe_points[0].co[1]
-                        fcurve.keyframe_points[0].co[1] = 1
+                        default_keyframe_point = -1
+                        # Look for a keyframe that exists on the currently selected frame
+                        for keyframe_index in range(len(fcurve.keyframe_points)):
+                            if fcurve.keyframe_points[keyframe_index].co[0] == float(origin_frame):
+                                default_keyframe_point = keyframe_index
+                                break
+
+                        # If a keyframe already exists on the currently selected frame, set its value to 0
+                        if default_keyframe_point != -1:
+                            orig_scale[index] = obj.scale[index]
+                            fcurve.keyframe_points[default_keyframe_point].co[1] = 1
+                        else:
+                            obj.scale[index] = 1
+                            obj.keyframe_insert("scale", index=index)
 
                 orig_pos_rot_scale[2][obj.name] = orig_scale
 
-            obj.location = (0,0,0)
-            obj.rotation_euler = (0,0,0)
-            obj.scale = (1,1,1)
+                # For non-animated channels
+                obj.location = (0,0,0)
+                obj.rotation_quaternion = (1, 0, 0, 0)
+                obj.scale = (1, 1, 1)
 
         print("Exporting OBJ...")
         bpy.ops.export_scene.obj(
@@ -418,31 +459,58 @@ class OBJECT_OT_export_obj(bpy.types.Operator):
 
         # Restore original position and animation
         for obj in bg_fg_models:
-            print("\tRestoring position and animation of " + obj.name)
             if obj.animation_data is not None and obj.animation_data.action is not None:
+                print("\tRestoring position and animation of " + obj.name)
+                fcurves  = obj.animation_data.action.fcurves
                 # Position keyframes
                 for index in [0, 1, 2]:
                     fcurve = fcurves.find("location", index=index)
                     if fcurve is not None:
-                        fcurve.keyframe_points[0].co[1] = orig_pos_rot_scale[0][obj.name][index] 
+                        if orig_pos_rot_scale[0][obj.name][index] is not None:
+                            default_keyframe_point = -1
+                            # Look for a keyframe that exists on the currently selected frame
+                            for keyframe_index in range(len(fcurve.keyframe_points)):
+                                if fcurve.keyframe_points[keyframe_index].co[0] == float(origin_frame):
+                                    default_keyframe_point = keyframe_index
+                                    break
+                        # If a keyframe already exists on the currently selected frame, set its value to 0
+                            fcurve.keyframe_points[default_keyframe_point].co[1] = orig_pos_rot_scale[0][obj.name][index]
+                        else:
+                            obj.keyframe_delete("location", index=index, frame=origin_frame)
 
-                orig_pos_rot_scale[0][obj.name] = orig_pos
-                
                 # Rotation keyframes
                 for index in [0, 1, 2]:
                     fcurve = fcurves.find("rotation_euler", index=index)
                     if fcurve is not None:
-                        fcurve.keyframe_points[0].co[1] = orig_pos_rot_scale[1][obj.name][index] 
-
-                orig_pos_rot_scale[1][obj.name] = orig_rot
+                        if orig_pos_rot_scale[1][obj.name][index] is not None:
+                            default_keyframe_point = -1
+                            # Look for a keyframe that exists on the currently selected frame
+                            for keyframe_index in range(len(fcurve.keyframe_points)):
+                                if fcurve.keyframe_points[keyframe_index].co[0] == float(origin_frame):
+                                    default_keyframe_point = keyframe_index
+                                    break
+                        # If a keyframe already exists on the currently selected frame, set its value to 0
+                            fcurve.keyframe_points[default_keyframe_point].co[1] = orig_pos_rot_scale[1][obj.name][index]
+                        else:
+                            obj.keyframe_delete("rotation_euler", index=index, frame=origin_frame)
 
                 # Scale keyframes
                 for index in [0, 1, 2]:
                     fcurve = fcurves.find("scale", index=index)
                     if fcurve is not None:
-                        fcurve.keyframe_points[0].co[1] = orig_pos_rot_scale[2][obj.name][index] 
+                        if orig_pos_rot_scale[2][obj.name][index] is not None:
+                            default_keyframe_point = -1
+                            # Look for a keyframe that exists on the currently selected frame
+                            for keyframe_index in range(len(fcurve.keyframe_points)):
+                                if fcurve.keyframe_points[keyframe_index].co[0] == float(origin_frame):
+                                    default_keyframe_point = keyframe_index
+                                    break
+                        # If a keyframe already exists on the currently selected frame, set its value to 0
+                            fcurve.keyframe_points[default_keyframe_point].co[1] = orig_pos_rot_scale[2][obj.name][index]
+                        else:
+                            obj.keyframe_delete("scale", index=index, frame=origin_frame)
 
-            obj.matrix_world = orig_matrix_dict[obj.name]
+                obj.matrix_world = orig_matrix_dict[obj.name]
 
         print("Finished exporting OBJ")
         return {'FINISHED'}
