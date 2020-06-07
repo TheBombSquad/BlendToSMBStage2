@@ -117,7 +117,6 @@ class OBJECT_OT_create_new_empty_and_select(bpy.types.Operator):
         newEmpty.select_set(True)
         return {'FINISHED'}
 
-
 class VIEW3D_PT_1_item_group_panel(bpy.types.Panel):
     bl_idname = "VIEW3D_PT_1_item_group_panel"
     bl_label = "Item Groups"
@@ -131,7 +130,6 @@ class VIEW3D_PT_1_item_group_panel(bpy.types.Panel):
         layout.label(text="Item Groups")
         new_item_group = layout.operator("object.create_new_empty_and_select", text="New Item Group")
         new_item_group.name = "[IG] New Item Group"
-
 
 class VIEW3D_PT_2_stage_object_panel(bpy.types.Panel):
     bl_idname = "VIEW3D_PT_2_stage_object_panel"
@@ -193,7 +191,6 @@ class VIEW3D_PT_2_stage_object_panel(bpy.types.Panel):
         new_fast_forward = switch_row.operator("object.create_new_empty_and_select", text=">>")
         new_fast_forward.name = "[SW_FF] New Fast Forward Switch"
 
-
 class VIEW3D_PT_3_active_object_panel(bpy.types.Panel):
     bl_idname = "VIEW3D_PT_3_active_object_panel"
     bl_label = "Active Object Settings"
@@ -253,7 +250,6 @@ class VIEW3D_PT_3_active_object_panel(bpy.types.Panel):
                     custom_prop = "[\"" +  key + "\"]"
                     properties.prop(obj, custom_prop, text=friendly_name)
         
-
 class VIEW3D_PT_4_export_panel(bpy.types.Panel):
     bl_idname = "VIEW3D_PT_4_export_panel"
     bl_label = "Export"
@@ -286,6 +282,7 @@ class VIEW3D_PT_5_settings(bpy.types.Panel):
         layout.prop(context.scene, "draw_stage_objects")
         layout.prop(context.scene, "draw_falloutProp")
         layout.prop(context.scene, "draw_collision_grid")
+        layout.operator("object.set_backface_culling")
 
 class VIEW3D_OT_draw_stage_objects(bpy.types.Operator):
     bl_idname = "view3d.draw_stage_objects"
@@ -312,7 +309,6 @@ class VIEW3D_OT_draw_stage_objects(bpy.types.Operator):
             self.report({"WARNING"}, "View3D not found, or stage visibility toggled off.")
             return {'CANCELLED'}
 
-
 def draw_callback_3d(self, context):
     bgl.glEnable(bgl.GL_BLEND)
     bgl.glEnable(bgl.GL_DEPTH_TEST)
@@ -336,13 +332,24 @@ def autoPathNames(self, context):
         context.scene.export_config_path = "//" + os.path.splitext(os.path.basename(bpy.context.blend_data.filepath))[0] + ".xml"
         context.scene.export_model_path = "//" + os.path.splitext(os.path.basename(bpy.context.blend_data.filepath))[0] + ".obj"
 
+class OBJECT_OT_set_backface_culling(bpy.types.Operator):
+    bl_idname = "object.set_backface_culling"
+    bl_label = "Set Backface Culling"
+    bl_description = "Sets the backface culling attribute on all materials"
+
+    def execute(self, context):
+        for mat in bpy.data.materials:
+            if hasattr(mat, 'use_backface_culling'):
+                mat.use_backface_culling = True
+
+        return {'FINISHED'}
+
 class OBJECT_OT_export_obj(bpy.types.Operator):
     bl_idname = "object.export_obj"
     bl_label = "Export OBJ"
     bl_description = "Clean up model and export OBJ to the selected path"
 
     def execute(self, context):
-
         origin_frame = context.scene.frame_start
         # Cleans up models to fix common crashes
         print("Cleaning up meshes...")
@@ -515,6 +522,7 @@ class OBJECT_OT_export_obj(bpy.types.Operator):
         print("Finished exporting OBJ")
         return {'FINISHED'}
 
+# TODO: Replace with the more efficient implementation of this
 # This is a really hacky way to get boolean custom properties to show up as checkboxes
 def update_prop(self, context):
     prop_name = '_' + self.name
