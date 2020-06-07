@@ -7,91 +7,6 @@ import xml.etree.ElementTree as etree
 
 from . import descriptors
 
-def addKeyframes(parent, selector):
-    startFrame = bpy.context.scene.frame_start
-    endFrame = bpy.context.scene.frame_end
-
-    if "loopTime" in bpy.context.view_layer.objects.active:
-        if bpy.context.view_layer.objects.active["loopTime"] != -1:
-            endFrame = startFrame + bpy.context.view_layer.objects.active["loopTime"]-1
-
-    bpy.context.scene.frame_set(0)
-    prev_val = None
-    
-    for i in range(startFrame, endFrame, bpy.context.scene.export_timestep):
-        bpy.context.scene.frame_set(i)
-        seconds = round((i-startFrame)/bpy.context.scene.render.fps, bpy.context.scene.export_time_round)
-        val = round(selector(bpy.context.view_layer.objects.active), bpy.context.scene.export_value_round)
-
-        if val != prev_val:
-            prev_val = val
-            keyframe = etree.Element("keyframe")
-            keyframe.set("time", str(seconds))
-            keyframe.set("value", str(val))
-            keyframe.set("easing", "LINEAR")
-            parent.append(keyframe)
-
-def addPosXAnim(parent):
-    addKeyframes(parent, lambda i: i.location.x)
-
-def addPosYAnim(parent):
-    addKeyframes(parent,lambda i: -i.location.y)
-
-def addPosZAnim(parent):
-    addKeyframes(parent,lambda i: i.location.z)
-
-def addRotXAnim(parent):
-    addKeyframes(parent,lambda i: math.degrees(i.rotation_euler.x))
-
-def addRotYAnim(parent):
-    addKeyframes(parent,lambda i: -math.degrees(i.rotation_euler.y))
-
-def addRotZAnim(parent):
-    addKeyframes(parent,lambda i: math.degrees(i.rotation_euler.z))
-
-def addAnimation(obj, parent):
-    bpy.context.view_layer.objects.active = obj
-
-    animKeyframes = etree.Element("animKeyframes")
-    hasInserted = False
-
-    if "_posXAnim" in obj and obj["_posXAnim"] != 0:
-        posX = etree.SubElement(animKeyframes, "posX")
-        addPosXAnim(posX)
-        if not hasInserted:
-            parent.append(animKeyframes)
-            hasInserted = True
-    if "_posYAnim" in obj and obj["_posYAnim"] != 0:
-        posZ = etree.SubElement(animKeyframes, "posZ")
-        addPosYAnim(posZ)
-        if not hasInserted:
-            parent.append(animKeyframes)
-            hasInserted = True
-    if "_posZAnim" in obj and obj["_posZAnim"] != 0:
-        posY = etree.SubElement(animKeyframes, "posY")
-        addPosZAnim(posY)
-        if not hasInserted:
-            parent.append(animKeyframes)
-            hasInserted = True
-    if "_rotXAnim" in obj and obj["_rotXAnim"] != 0:
-        rotX = etree.SubElement(animKeyframes, "rotX")
-        addRotXAnim(rotX)
-        if not hasInserted:
-            parent.append(animKeyframes)
-            hasInserted = True
-    if "_rotYAnim" in obj and obj["_rotYAnim"] != 0:
-        rotZ = etree.SubElement(animKeyframes, "rotZ")
-        addRotYAnim(rotZ)
-        if not hasInserted:
-            parent.append(animKeyframes)
-            hasInserted = True
-    if "_rotZAnim" in obj and obj["_rotZAnim"] != 0:
-        rotY = etree.SubElement(animKeyframes, "rotY")
-        addRotZAnim(rotY)
-        if not hasInserted:
-            parent.append(animKeyframes)
-            hasInserted = True
-
 class OBJECT_OT_generate_config(bpy.types.Operator):
     bl_idname = "object.generate_config"
     bl_label = "Generate Config"
@@ -152,7 +67,7 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
                 continue
 
             # Animation
-            addAnimation(ig, xig)
+            descriptors.addAnimation(ig, xig)
 
             # Children of item groups
             for child in ig_children:

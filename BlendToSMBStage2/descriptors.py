@@ -22,7 +22,6 @@ def generate_generic_obj_element(obj, obj_type, parent, *, position=False, rotat
         else:
             nameE.text = obj.name
 
-    #print(str(name) + str(position) + str(rotation) + str(scale))
     if position:
         etree.SubElement(sub, "position", x=str(loc.x), y=str(loc.z), z=str(-loc.y))
     if rotation:
@@ -37,6 +36,10 @@ def addKeyframes(parent, selector):
     startFrame = bpy.context.scene.frame_start
     endFrame = bpy.context.scene.frame_end
     active = bpy.context.view_layer.objects.active
+
+    if "animLoopTime" in active:
+        if active["animLoopTime"] != -1.0:
+            endFrame = startFrame + int(round(active["animLoopTime"]*60))-1
 
     bpy.context.scene.frame_set(0)
     prev_val = None

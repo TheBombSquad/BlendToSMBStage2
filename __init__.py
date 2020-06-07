@@ -41,7 +41,7 @@ def load_handler(dummy):
             del obj["rotZAnim"]
 
         # Item Groups
-        if obj.name.startswith("[IG]"):
+        if "[IG]" in obj.name:
             # Properties with changed names
             if "initPlaying" in obj.keys():
                 obj["_initPlaying"] = obj["initPlaying"]
@@ -53,6 +53,13 @@ def load_handler(dummy):
             if "loopTime" in obj.keys():
                 obj["animLoopTime"] = obj["loopTime"]
                 del obj["loopTime"]
+
+            # Casts to float, since certain old properties don't line up correctly
+            if "animLoopTime" in obj.keys():
+                if type(obj["animLoopTime"]) is int:
+                    obj["animLoopTime"] = float(obj["animLoopTime"])
+                    if (obj["animLoopTime"] != -1.0):
+                        obj["animLoopTime"] = obj["animLoopTime"]/bpy.context.scene.render.fps
 
             # New properties
             if "seesawSensitivity" not in obj.keys():
@@ -104,10 +111,14 @@ def load_handler(dummy):
         
         # Set up UI for objects
         for desc in descriptors.descriptors_all:
-            if obj.name.startswith(desc.get_object_name()):
+            if desc.get_object_name() in obj.name:
                 desc.rna_ui_setup(obj)
 
     for mat in bpy.data.materials:
+        # Enable backface culling for all materials
+        if hasattr(mat, 'use_backface_culling'):
+            mat.use_backface_culling = True
+
         if (mat.use_nodes):
             nodes = mat.node_tree.nodes
             links = mat.node_tree.links
@@ -137,10 +148,6 @@ def load_handler(dummy):
                 links.new(material_output_node.inputs['Surface'], principled_node.outputs['BSDF'])
                 links.new(principled_node.inputs['Base Color'], image_texture_node.outputs['Color'])
                 principled_node.inputs['Specular'].default_value = 0.0
-
-        # Enable backface culling for all materials
-        if hasattr(mat, 'use_backface_culling'):
-            mat.use_backface_culling = True
 
 # Register
 def register():
