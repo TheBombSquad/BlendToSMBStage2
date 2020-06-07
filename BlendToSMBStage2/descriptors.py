@@ -38,10 +38,6 @@ def addKeyframes(parent, selector):
     endFrame = bpy.context.scene.frame_end
     active = bpy.context.view_layer.objects.active
 
-    if "animLoopTime" in active:
-        if active["animLoopTime"] != -1.0:
-            endFrame = startFrame + bpy.context.view_layer.objects.active["animLoopTime"]-1
-
     bpy.context.scene.frame_set(0)
     prev_val = None
     

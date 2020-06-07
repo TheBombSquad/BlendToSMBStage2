@@ -207,7 +207,7 @@ def register():
     )
     bpy.types.Scene.auto_path_names = bpy.props.BoolProperty(
             name="Automatic Path Names",
-            default = True,
+            default = False,
             update=stage_editor.autoPathNames)
     
     #TODO: Maybe make this an option in the future
