@@ -528,6 +528,16 @@ def update_prop(self, context):
     prop_name = '_' + self.name
     context.active_object[prop_name] = self[self.name]
 
+def update_linked_prop(self, context):
+    prop_name = "_" + self.name
+    linked_object = self[self.name]
+    context.active_object[prop_name] = linked_object
+
+    if "whId" in context.active_object.keys():
+        context.active_object["linkedId"] = linked_object["whId"] 
+    else:
+        context.active_object["linkedId"] = linked_object["animId"]
+
 class StageObjectPropertyProxy(bpy.types.PropertyGroup):
     cast_shadow: BoolProperty(name="Casts Shadow", update=update_prop)
     receive_shadow: BoolProperty(name="Receives Shadow", update=update_prop)
@@ -551,4 +561,4 @@ class StageObjectPropertyProxy(bpy.types.PropertyGroup):
                 ('1','Play Once Animation',''),
                 ('2','Seesaw','')]
     )
-    linkedObject: PointerProperty(name="Linked", type=bpy.types.Object, update=update_prop)
+    linkedObject: PointerProperty(name="Linked", type=bpy.types.Object, update=update_linked_prop)

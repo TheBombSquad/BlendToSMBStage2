@@ -8,6 +8,8 @@ names = {
     "collisionStepCountX": "Col. Step Count X",
     "collisionStepCountY": "Col. Step Count Y",
     "animId": "Animation ID",
+    "linkedId": "Linked Object ID",
+    "whId": "Wormhole ID",
     "animLoopTime": "Loop Time (s)",
     "conveyorX": "Conveyor X Force",
     "conveyorY": "Conveyor Y Force",

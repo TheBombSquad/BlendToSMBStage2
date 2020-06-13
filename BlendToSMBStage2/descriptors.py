@@ -18,7 +18,7 @@ def generate_generic_obj_element(obj, obj_type, parent, *, position=False, rotat
     if name:
         nameE = etree.SubElement(sub, "name")
         if '[WH]' in obj.name:
-            nameE.text = str(obj["_id"])
+            nameE.text = str(obj["whId"])
         else:
             nameE.text = obj.name
 
@@ -650,9 +650,8 @@ class DescriptorSwitch(DescriptorBase):
         if obj['_linkedObject'] is not None:
             group.text = str(obj['_linkedObject']['animId'])
         else: 
-            # Legacy 2.79 support
-            if "_animId" in obj.keys():
-                group.text = str(obj["_animId"])
+            if "linkedId" in obj.keys():
+                group.text = str(obj["linkedId"])
             else:
                 raise Exception("Switch not linked to an item group")
 
@@ -663,6 +662,7 @@ class DescriptorSwitch(DescriptorBase):
     @staticmethod
     def construct(obj):
         obj["_linkedObject"] = None
+        obj["linkedId"] = 0
 
         DescriptorBase.rna_ui_setup(obj)
 
@@ -687,13 +687,12 @@ class DescriptorWH(DescriptorBase):
     # Generates the XML element for the object
     @staticmethod
     def generate_xml(parent_element, obj):
-        whId = str(obj["_id"])
+        whId = str(obj["whId"])
         if obj["_linkedObject"] is not None:
-            whLinkedId = obj["_linkedObject"]["_id"]
+            whLinkedId = obj["_linkedObject"]["whId"]
         else:
-            if "_linkedId" in obj.keys():
-                # Legacy 2.79 support
-                whLinkedId = obj["_linkedId"]
+            if "linkedId" in obj.keys():
+                whLinkedId = obj["linkedId"]
             else:
                 raise Exception("Wormhole not linked to another wormhole")
 
@@ -711,7 +710,8 @@ class DescriptorWH(DescriptorBase):
     # Assigns custom properties to the object
     @staticmethod
     def construct(obj):
-        obj["_id"] = random.randint(1, 100000001)
+        obj["whId"] = random.randint(1, 100000001)
+        obj["linkedId"] = 0
         obj["_linkedObject"] = None
 
         DescriptorBase.rna_ui_setup(obj)

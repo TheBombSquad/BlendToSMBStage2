@@ -82,18 +82,21 @@ def load_handler(dummy):
         # Wormholes
         if obj.name.startswith("[WH]"):
             if "id" in obj.keys():
-                obj["_id"] = obj["id"]
+                obj["whId"] = obj["id"]
                 del obj["id"]
-            if "linkedId" in obj.keys(): 
-                obj["_linkedId"] = obj["linkedId"]
-                del obj["linkedId"]
+            if "_linkedId" in obj.keys(): 
+                obj["linkedId"] = obj["_linkedId"]
+                del obj["_linkedId"]
             if "_linkedObject" not in obj.keys():
                 obj["_linkedObject"] = None
 
         # Switches
         if obj.name.startswith("[SW_"):
+            if "_animId" in obj.keys():
+                obj["linkedId"] = obj["_animId"]
+                del obj["_animId"]
             if "animId" in obj.keys():
-                obj["_animId"] = obj["animId"]
+                obj["linkedId"] = obj["animId"]
                 del obj["animId"]
             if "_linkedObject" not in obj.keys():
                 obj["_linkedObject"] = None
