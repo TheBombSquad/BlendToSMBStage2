@@ -32,7 +32,7 @@ def generate_generic_obj_element(obj, obj_type, parent, *, position=False, rotat
     return sub
 
 
-def addKeyframes(parent, selector):
+def addKeyframes(parent, selector, fcurve):
     startFrame = bpy.context.scene.frame_start
     endFrame = bpy.context.scene.frame_end
     active = bpy.context.view_layer.objects.active
@@ -54,8 +54,18 @@ def addKeyframes(parent, selector):
         bpy.context.scene.frame_set(i)
         seconds = round((i-startFrame)/bpy.context.scene.render.fps, bpy.context.scene.export_time_round)
         val = round(selector(bpy.context.view_layer.objects.active), bpy.context.scene.export_value_round)
+        current_fcurve = fcurve(bpy.context.view_layer.objects.active.animation_data.action)
 
-        if val != prev_val:
+        if val == prev_val:
+            if current_fcurve is not None:
+                for keyframe_point in current_fcurve.keyframe_points:
+                    if keyframe_point.co[0] == float(bpy.context.scene.frame_current): 
+                        keyframe = etree.Element("keyframe")
+                        keyframe.set("time", str(seconds))
+                        keyframe.set("value", str(keyframe_point.co[1]))
+                        keyframe.set("easing", "LINEAR")
+                        parent.append(keyframe)
+        else:
             prev_val = val
             keyframe = etree.Element("keyframe")
             keyframe.set("time", str(seconds))
@@ -64,31 +74,31 @@ def addKeyframes(parent, selector):
             parent.append(keyframe)
 
 def addPosXAnim(parent):
-    addKeyframes(parent, lambda i: i.location.x)
+    addKeyframes(parent, lambda i: i.location.x, lambda f: f.fcurves.find("location", index=0))
 
 def addPosYAnim(parent):
-    addKeyframes(parent,lambda i: -i.location.y)
+    addKeyframes(parent,lambda i: -i.location.y, lambda f: f.fcurves.find("location", index=1))
 
 def addPosZAnim(parent):
-    addKeyframes(parent,lambda i: i.location.z)
+    addKeyframes(parent,lambda i: i.location.z, lambda f: f.fcurves.find("location", index=2))
 
 def addRotXAnim(parent):
-    addKeyframes(parent,lambda i: math.degrees(i.rotation_euler.x))
+    addKeyframes(parent,lambda i: math.degrees(i.rotation_euler.x), lambda f: f.fcurves.find("rotation_euler", index=0))
 
 def addRotYAnim(parent):
-    addKeyframes(parent,lambda i: -math.degrees(i.rotation_euler.y))
+    addKeyframes(parent,lambda i: -math.degrees(i.rotation_euler.y), lambda f: f.fcurves.find("rotation_euler", index=1))
 
 def addRotZAnim(parent):
-    addKeyframes(parent,lambda i: math.degrees(i.rotation_euler.z))
+    addKeyframes(parent,lambda i: math.degrees(i.rotation_euler.z), lambda f: f.fcurves.find("rotation_euler", index=2))
 
 def addScaleXAnim(parent):
-    addKeyframes(parent, lambda i: i.scale.x)
+    addKeyframes(parent, lambda i: i.scale.x, lambda f: f.fcurves.find("scale", index=0))
 
 def addScaleYAnim(parent):
-    addKeyframes(parent,lambda i: i.scale.y)
+    addKeyframes(parent,lambda i: i.scale.y, lambda f: f.fcurves.find("scale", index=1))
 
 def addScaleZAnim(parent):
-    addKeyframes(parent,lambda i: i.scale.z)
+    addKeyframes(parent,lambda i: i.scale.z, lambda f: f.fcurves.find("scale", index=2))
 
 def addAnimation(obj, parent):
     print("\tChecking for animation...")
