@@ -75,7 +75,7 @@ class OBJECT_OT_convert_selected(bpy.types.Operator):
         #selected.rotation_mode = 'XZY'
 
         # Clear active properties
-        if self.prefix != "[MODEL]":
+        if self.prefix not in ["[MODEL]", "[NODISP]", "[MIR]", "[NOCOLI]"]:
             for key in selected.keys():
                 del selected[key]
 

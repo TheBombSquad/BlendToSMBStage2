@@ -51,6 +51,9 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
                 if obj.name.startswith(desc.get_object_name()): 
                     match_descriptor = True
                     desc.generate_xml(root, obj)
+                    continue
+            if obj.data is not None:
+                descriptors.DescriptorModel.generate_xml(root, obj)
 
         # Iterator over all item groups
         for ig in igs: 
