@@ -60,11 +60,19 @@ def addKeyframes(parent, selector, fcurve):
             if current_fcurve is not None:
                 for keyframe_point in current_fcurve.keyframe_points:
                     if keyframe_point.co[0] == float(bpy.context.scene.frame_current): 
+                        fcurve_type = current_fcurve.data_path
+                        if fcurve_type == "rotation_euler":
+                            value = round(math.degrees(keyframe_point.co[1]), bpy.context.scene.export_value_round)
+                            if current_fcurve.array_index == 1: value = -1*value
+                        else:
+                            value = round(keyframe_point.co[1], bpy.context.scene.export_value_round)
+
                         keyframe = etree.Element("keyframe")
                         keyframe.set("time", str(seconds))
-                        keyframe.set("value", str(keyframe_point.co[1]))
+                        keyframe.set("value", str(value))
                         keyframe.set("easing", "LINEAR")
                         parent.append(keyframe)
+                        break
         else:
             prev_val = val
             keyframe = etree.Element("keyframe")
