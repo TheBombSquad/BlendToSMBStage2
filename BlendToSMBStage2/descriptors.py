@@ -45,6 +45,7 @@ def addKeyframes(parent, selector, fcurve):
     prev_val = None
     
     timestep = bpy.context.scene.export_timestep
+    optimize = bpy.context.scene.optimize_keyframes
 
     if "exportTimestep" in active: 
         if active["exportTimestep"] != -1:
@@ -56,17 +57,19 @@ def addKeyframes(parent, selector, fcurve):
         val = round(selector(bpy.context.view_layer.objects.active), bpy.context.scene.export_value_round)
         current_fcurve = fcurve(bpy.context.view_layer.objects.active.animation_data.action)
 
-        if val == prev_val:
+        
+        if (optimize and  (val == prev_val)):
             if current_fcurve is not None:
                 for keyframe_point in current_fcurve.keyframe_points:
                     if keyframe_point.co[0] == float(bpy.context.scene.frame_current): 
                         fcurve_type = current_fcurve.data_path
                         if fcurve_type == "rotation_euler":
                             value = round(math.degrees(keyframe_point.co[1]), bpy.context.scene.export_value_round)
-                            if current_fcurve.array_index == 1: value = -1*value
                         else:
                             value = round(keyframe_point.co[1], bpy.context.scene.export_value_round)
 
+                        if current_fcurve.array_index == 1: value = -1*value
+                        
                         keyframe = etree.Element("keyframe")
                         keyframe.set("time", str(seconds))
                         keyframe.set("value", str(value))
@@ -314,7 +317,6 @@ class DescriptorIG(DescriptorBase):
         etree.SubElement(grid, "step", x=str(obj["collisionStepX"]), z=str(obj["collisionStepY"]))
         etree.SubElement(grid, "count", x=str(obj["collisionStepCountX"]), z=str(obj["collisionStepCountY"]))
 
-        if obj.animation_data is not None: addAnimation(obj, xig)        
         return xig
 
     @staticmethod

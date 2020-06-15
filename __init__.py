@@ -84,6 +84,9 @@ def load_handler(dummy):
             if "id" in obj.keys():
                 obj["whId"] = obj["id"]
                 del obj["id"]
+            if "_id" in obj.keys():
+                obj["whId"] = obj["_id"]
+                del obj["_id"]
             if "_linkedId" in obj.keys(): 
                 obj["linkedId"] = obj["_linkedId"]
                 del obj["_linkedId"]
@@ -220,11 +223,12 @@ def register():
             default = False,
             update=stage_editor.autoPathNames)
     
-    #TODO: Maybe make this an option in the future
-    #bpy.types.Scene.optimize_keyframes = bpy.props.BoolProperty(
-    #        name="Optimize Keyframe Export",
-    #        description="Remove redundant keyframes. Turning this off is the equivalent of baking the entire animation.",
-    #        default = True,
+    bpy.types.Scene.optimize_keyframes = bpy.props.BoolProperty(
+            name="Optimize Keyframes",
+            description="Remove redundant keyframes. Turning this off is the equivalent of baking the entire animation.",
+            default = True,
+    )
+
     bpy.types.Object.stage_object_properties = bpy.props.CollectionProperty(type=stage_editor.StageObjectPropertyProxy)
 
     bpy.app.handlers.load_post.append(load_handler)

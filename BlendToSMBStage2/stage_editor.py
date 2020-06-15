@@ -283,6 +283,7 @@ class VIEW3D_PT_5_settings(bpy.types.Panel):
         layout.prop(context.scene, "draw_falloutProp")
         layout.prop(context.scene, "draw_collision_grid")
         layout.operator("object.set_backface_culling")
+        layout.prop(context.scene, "optimize_keyframes")
 
 class VIEW3D_OT_draw_stage_objects(bpy.types.Operator):
     bl_idname = "view3d.draw_stage_objects"
@@ -317,7 +318,7 @@ def draw_callback_3d(self, context):
         for obj in bpy.data.objects:
             if obj.visible_get():
                 for desc in descriptors.descriptors_all:
-                    if obj.name.startswith(desc.get_object_name()):
+                    if desc.get_object_name() in obj.name:
                         desc.render(obj)
         # Draw fallout plane
         if bpy.context.scene.draw_falloutProp:
