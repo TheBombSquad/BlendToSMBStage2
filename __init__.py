@@ -54,6 +54,11 @@ def load_handler(dummy):
                 obj["animLoopTime"] = obj["loopTime"]
                 del obj["loopTime"]
 
+            # Cast collision start and step amounts to floats
+            for floatKey in ["collisionStartX", "collisionStartY", "collisionStepX", "collisionStepY"]:
+                if floatKey in obj.keys():
+                    obj[floatKey] = float(obj[floatKey])
+
             # Casts to float, since certain old properties don't line up correctly
             if "animLoopTime" in obj.keys():
                 if type(obj["animLoopTime"]) is int:
