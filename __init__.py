@@ -3,7 +3,7 @@ import importlib
 import inspect
 import traceback
 from . import developer_utils
-from .BlendToSMBStage2 import stage_editor, statics, descriptors
+from .BlendToSMBStage2 import stage_editor, statics, descriptors, menus
 from bpy.app.handlers import persistent
 
 bl_info = {
@@ -236,6 +236,8 @@ def register():
 
     bpy.types.Object.stage_object_properties = bpy.props.CollectionProperty(type=stage_editor.StageObjectPropertyProxy)
 
+    menus.handle_register()
+
     bpy.app.handlers.load_post.append(load_handler)
     print("Successfully registered {} with {} modules".format(bl_info["name"], len(modules)))
     for module in modules:
@@ -243,6 +245,8 @@ def register():
 
 # Unregister
 def unregister():
+    menus.handle_unregister()
+
     del bpy.types.Scene.export_timestep
     del bpy.types.Scene.export_value_round
     del bpy.types.Scene.export_time_round
