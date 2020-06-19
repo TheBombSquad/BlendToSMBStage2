@@ -293,6 +293,7 @@ class DescriptorIG(DescriptorBase):
         if animType == 0: animTypeStr = "PLAY_ONCE_ANIMATION"
         elif animType == 1: animTypeStr = "LOOPING_ANIMATION"
         elif animType == 2: animTypeStr = "SEESAW"
+        else: raise ValueError("Object " + obj.name + " has invalid anim type " + str(animType))
 
         animTypeE = etree.SubElement(xig, "animSeesawType")
         animTypeE.text = animTypeStr
