@@ -293,6 +293,7 @@ class DescriptorIG(DescriptorBase):
         if animType == 0: animTypeStr = "PLAY_ONCE_ANIMATION"
         elif animType == 1: animTypeStr = "LOOPING_ANIMATION"
         elif animType == 2: animTypeStr = "SEESAW"
+        else: raise ValueError("Object " + obj.name + " has invalid anim type " + str(animType))
 
         animTypeE = etree.SubElement(xig, "animSeesawType")
         animTypeE.text = animTypeStr
@@ -770,12 +771,14 @@ class DescriptorGoal(DescriptorBase):
 
     @staticmethod
     def get_object_type(obj):
-        types = {"B": "BLUE",
-                 "G": "GREEN",
-                 "R": "RED"}
-        goal_name = obj.name
-        goal_type = goal_name[6:goal_name.index(']')]
-        return types[goal_type]
+        if "[GOAL_B]" in obj.name:
+            return "BLUE"
+        elif "[GOAL_G]" in obj.name:
+            return "GREEN"
+        elif "[GOAL_R]" in obj.name:
+            return "RED"
+        else:
+            raise ValueError("Bad goal type for object " + obj.name)
 
 # List of all objects
 descriptors = [
