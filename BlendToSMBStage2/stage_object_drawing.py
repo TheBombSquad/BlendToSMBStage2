@@ -2,6 +2,7 @@ import math
 import mathutils
 import gpu
 import bgl
+import bmesh
 
 from gpu_extras.batch import batch_for_shader
 from mathutils import Matrix, Vector
@@ -326,22 +327,21 @@ def draw_wh(obj):
     gpu.matrix.scale((1/obj.scale.x, 1/obj.scale.y, 1/obj.scale.z)) # No scaling
 
     lineWidth = [(6, COLOR_BLACK), (2, COLOR_BLUE)]
-    wh_frame = [(2.15, 0,0),
-                (1.15, 0, 4.23),
-                (0.87929, 0, 4.55),
-                (-0.87929, 0, 4.55),
-                (-1.15, 0, 4.3),
-                (-2.15, 0, 0),
-                (2.15, 0, 0)]
 
     for width, color in lineWidth:
+        wh_frame = [(2.15, 0,0),
+                    (1.15, 0, 4.23),
+                    (0.87929, 0, 4.55),
+                    (-0.87929, 0, 4.55),
+                    (-1.15, 0, 4.3),
+                    (-2.15, 0, 0),
+                    (2.15, 0, 0)]
         bgl.glLineWidth(width)
         draw_batch(wh_frame, color, "LINE_STRIP")
 
     gpu.matrix.pop()
 
 def draw_ig(obj, draw_collision_grid):
-
     startX = obj["collisionStartX"]
     startY = -obj["collisionStartY"]
     stepX = obj["collisionStepX"]
@@ -365,15 +365,19 @@ def draw_ig(obj, draw_collision_grid):
         gpu.matrix.pop()
 
     # Draw conveyor arrow
-    gpu.matrix.push()
-    gpu.matrix.multiply_matrix(obj.matrix_world)
-    gpu.matrix.scale((1/obj.scale.x, 1/obj.scale.y, 1/obj.scale.z)) # No scaling
-    coords =  [ZERO_VEC, conveyorEndPos]
-    lineWidth = [(6, COLOR_BLACK), (2, COLOR_GREEN)]
-    for width, color in lineWidth:
-        bgl.glLineWidth(width)
-        draw_batch(coords, color, 'LINES')
-    gpu.matrix.pop()
+    conveyorObjects = [child for child in obj.children if child.data is not None]
+    if obj.data is not None: conveyorObjects.append(obj)
+
+    for conveyorObject in conveyorObjects:
+        gpu.matrix.push()
+        gpu.matrix.multiply_matrix(conveyorObject.matrix_world)
+        gpu.matrix.scale((1/conveyorObject.scale.x, 1/conveyorObject.scale.y, 1/conveyorObject.scale.z)) # No scaling
+        lineWidth = [(6, COLOR_BLACK), (2, COLOR_GREEN)]
+        for (width, color) in lineWidth:
+            coords = [ZERO_VEC, conveyorEndPos]
+            bgl.glLineWidth(width)
+            draw_batch(coords, color, 'LINES')
+        gpu.matrix.pop()
 
 def draw_generic_sphere(obj, radius, color):
     gpu.matrix.push()
