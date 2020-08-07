@@ -554,12 +554,14 @@ class StageObjectPropertyProxy(bpy.types.PropertyGroup):
                 ('1','Playing',''),
                 ('2','Reverse',''),
                 ('3','Fast Forward',''),
-                ('4','Fast Reverse','')]
+                ('4','Fast Reverse',''),],
+            default='1'
     )
     loopAnim: EnumProperty(name="Animation Type",
             update=update_prop,
-            items=[('0','Looping Animation',''),
-                ('1','Play Once Animation',''),
-                ('2','Seesaw','')]
+            items=[('0','Play Once Animation',''),
+                ('1','Looping Animation',''),
+                ('2','Seesaw','')],
+            default='1'
     )
     linkedObject: PointerProperty(name="Linked", type=bpy.types.Object, update=update_linked_prop)
