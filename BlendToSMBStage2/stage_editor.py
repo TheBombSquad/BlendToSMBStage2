@@ -66,6 +66,7 @@ class OBJECT_OT_convert_selected(bpy.types.Operator):
     bl_idname = "object.convert_selected"
     bl_label = "Convert Selected Item"
     bl_description = "Converts selected item to a specified type"
+    bl_options = {'UNDO'}
     prefix: bpy.props.StringProperty(default="[]")
 
     def execute(self, context):
@@ -93,6 +94,7 @@ class OBJECT_OT_create_new_empty_and_select(bpy.types.Operator):
     bl_idname = "object.create_new_empty_and_select"
     bl_label = "Create New Empty And Select"
     bl_description = "Creates a new empty object of a specified name"
+    bl_options = {'UNDO'}
     name: bpy.props.StringProperty(default="Empty")
 
     def execute(self, context):
@@ -117,6 +119,7 @@ class OBJECT_OT_create_new_empty_and_select(bpy.types.Operator):
         newEmpty.select_set(True)
         return {'FINISHED'}
 
+# Panels for the UI
 class VIEW3D_PT_1_item_group_panel(bpy.types.Panel):
     bl_idname = "VIEW3D_PT_1_item_group_panel"
     bl_label = "Item Groups"

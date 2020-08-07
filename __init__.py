@@ -256,6 +256,7 @@ def unregister():
     del bpy.types.Scene.draw_stage_objects
     del bpy.types.Scene.draw_collision_grid
     del bpy.types.Scene.auto_path_names
+    del bpy.types.Scene.optimize_keyframes
     del bpy.types.Scene.falloutProp
     del bpy.types.Object.stage_object_properties
 
