@@ -342,6 +342,9 @@ def draw_wh(obj):
     gpu.matrix.pop()
 
 def draw_ig(obj, draw_collision_grid):
+    if "collisionStartX" not in obj.keys():
+        return
+
     startX = obj["collisionStartX"]
     startY = -obj["collisionStartY"]
     stepX = obj["collisionStepX"]
