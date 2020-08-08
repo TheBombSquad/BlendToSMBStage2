@@ -2,9 +2,12 @@ import sys
 import bpy
 import math
 import random
+from sys import platform
 
-#from lxml import etree
-import xml.etree.ElementTree as etree
+if platform == "linux" or platform == "linux2":
+    from lxml import etree
+else:
+    import xml.etree.ElementTree as etree
 
 from . import stage_object_drawing, property_dict, statics
 

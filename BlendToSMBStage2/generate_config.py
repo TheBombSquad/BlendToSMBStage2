@@ -1,9 +1,12 @@
 import bpy
 import sys
 import math
+from sys import platform
 
-#from lxml import etree
-import xml.etree.ElementTree as etree
+if platform == "linux" or platform == "linux2":
+    from lxml import etree
+else:
+    import xml.etree.ElementTree as etree
 
 from . import descriptors
 
@@ -37,15 +40,39 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
         # Start frame of animation
         begin_frame = context.scene.frame_start
 
+        # Marks objects that don't have keyframes on frame 0
+        remove_beginframe_objs = []
+
         # Iterate over all top-level objects
         for obj in [obj for obj in bpy.context.scene.objects if (obj.type == 'EMPTY' or obj.type == 'MESH')]:
-            # Hack to get center of rotation to work properly with frame zero animation
             if "[IG]" in obj.name: 
                 igs.append(obj)
                 context.scene.frame_set(begin_frame)
-                print("\tInserted frame zero keyframe for item group " + obj.name + ": Position: " + str(obj.location))
-                obj.keyframe_insert("location", frame=begin_frame, options={'INSERTKEY_NEEDED'}) 
+
+                # Semi-hacky way to get the object's center of rotation to work properly
+                # B2SMB1 inadvertently fixed this by baking *all* keyframes
+                begin_keyframe_exists = False
+                if obj.animation_data is not None and obj.animation_data.action is not None:
+                    fcurves = obj.animation_data.action.fcurves
+                    for index in [0, 1, 2]:
+                        for curve_type in ["location", "rotation_euler"]:
+                            fcurve = fcurves.find(curve_type, index=index)
+                            if fcurve is not None:
+                                for keyframe_index in range(len(fcurve.keyframe_points)):
+                                    if fcurve.keyframe_points[keyframe_index].co[0] == float(begin_frame):
+                                        begin_keyframe_exists = True
+                                        break
+                        else: continue
+                        break
+
+                # Remove the beginning keyframe if it didn't exist prior to it being added
+                if not begin_keyframe_exists:
+                    remove_beginframe_objs.append(obj)
+
+                print("\tInserted frame zero keyframe for item group " + obj.name)
+                obj.keyframe_insert("location", frame=begin_frame, options={'INSERTKEY_NEEDED'})
                 obj.keyframe_insert("rotation_euler", frame=begin_frame, options={'INSERTKEY_NEEDED'})
+
             for desc in descriptors.descriptors_nonig:
                 match_descriptor = False
                 if obj.name.startswith(desc.get_object_name()): 
@@ -68,7 +95,8 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
                 continue
 
             # Animation
-            descriptors.addAnimation(ig, xig)
+            if ig.animation_data is not None and ig.animation_data.action is not None:
+                descriptors.addAnimation(ig, xig)
 
             # Children of item groups
             for child in ig_children:
@@ -91,11 +119,19 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
         context.scene.frame_set(begin_frame)
 
         print("Completed, saving...")
-        #config = etree.tostring(root, pretty_print=True, encoding="unicode")
-        config = etree.tostring(root, encoding="unicode")
+        if platform == "linux" or platform == "linux2":
+            config = etree.tostring(root, pretty_print=True, encoding="unicode")
+        else:
+            config = etree.tostring(root, encoding="unicode")
         config_file = open(bpy.path.abspath(context.scene.export_config_path), "w")
         config_file.write(config)
         config_file.close()
         print("Finished generating config")
+
+        # Remove the beginning keyframe if it didn't exist prior to it being added
+        for obj in remove_beginframe_objs:
+            print("Deleted frame zero keyframe for item group " + obj.name)
+            obj.keyframe_delete("location", frame=begin_frame)
+            obj.keyframe_delete("rotation_euler", frame=begin_frame)
 
         return {'FINISHED'}

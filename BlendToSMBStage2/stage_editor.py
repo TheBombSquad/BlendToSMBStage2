@@ -355,6 +355,7 @@ class OBJECT_OT_export_obj(bpy.types.Operator):
 
     def execute(self, context):
         origin_frame = context.scene.frame_start
+
         # Cleans up models to fix common crashes
         print("Cleaning up meshes...")
         bpy.ops.object.mode_set(mode='OBJECT')
@@ -364,6 +365,7 @@ class OBJECT_OT_export_obj(bpy.types.Operator):
             bpy.context.view_layer.objects.active = obj
             bpy.ops.object.mode_set(mode='EDIT')
             bpy.ops.mesh.dissolve_degenerate()
+            bpy.ops.mesh.delete_loose()
             bpy.ops.object.mode_set(mode='OBJECT')
 
         # Sets frame to start
