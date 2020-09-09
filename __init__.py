@@ -79,6 +79,12 @@ def load_handler(dummy):
                 obj["texScrollVSpeed"] = 0.0
             if "exportTimestep" not in obj.keys():
                 obj["exportTimestep"] = -1
+            if "conveyorX" not in obj.keys():
+                obj["conveyorX"] = 0.0
+            if "conveyorY" not in obj.keys():
+                obj["conveyorY"] = 0.0
+            if "conveyorZ" not in obj.keys():
+                obj["conveyorZ"] = 0.0
         # Goals
         if obj.name.startswith("[GOAL_"):
             if "_cast_shadow" not in obj.keys():

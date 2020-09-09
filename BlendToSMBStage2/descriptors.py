@@ -301,9 +301,9 @@ class DescriptorIG(DescriptorBase):
         animTypeE = etree.SubElement(xig, "animSeesawType")
         animTypeE.text = animTypeStr
 
-        conv = etree.SubElement(xig, "conveyorSpeed", x=str(obj["conveyorX"]),
-                                                      y=str(obj["conveyorY"]),
-                                                      z=str(obj["conveyorZ"]))
+        conv = etree.SubElement(xig, "conveyorSpeed", x=str(obj.get("conveyorX", 0.0)),
+                                                      y=str(obj.get("conveyorY", 0.0)),
+                                                      z=str(obj.get("conveyorZ", 0.0)))
 
         seesawSens = etree.SubElement(xig, "seesawSensitivity")
         seesawSens.text = str(obj["seesawSensitivity"])
