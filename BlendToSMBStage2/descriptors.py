@@ -71,7 +71,7 @@ def addKeyframes(parent, selector, fcurve):
                         else:
                             value = round(keyframe_point.co[1], bpy.context.scene.export_value_round)
 
-                        if current_fcurve.array_index == 1: value = -1*value
+                        if current_fcurve.array_index == 1 and fcurve_type != "scale": value = -1*value
                         
                         keyframe = etree.Element("keyframe")
                         keyframe.set("time", str(seconds))
