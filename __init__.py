@@ -263,6 +263,14 @@ def register():
             description="Remove redundant keyframes. Turning this off is the equivalent of baking the entire animation.",
             default = True,
     )
+    bpy.types.Scene.stage_game_mode = bpy.props.EnumProperty(
+            name="Game Mode",
+            description="Game mode of the stage to  be exported.",
+            items=[('MAIN_GAME', 'Main Game', ''),
+                   ('MONKEY_RACE_2', 'Monkey Race 2', ''),
+                   ('MONKEY_GOLF_2', 'Monkey Golf 2', '')],
+            default='MAIN_GAME'
+    )
 
     bpy.types.Object.stage_object_properties = bpy.props.CollectionProperty(type=stage_editor.StageObjectPropertyProxy)
 
@@ -292,6 +300,7 @@ def unregister():
     del bpy.types.Scene.auto_path_names
     del bpy.types.Scene.optimize_keyframes
     del bpy.types.Scene.falloutProp
+    del bpy.types.Scene.stage_game_mode
     del bpy.types.Object.stage_object_properties
 
     try:

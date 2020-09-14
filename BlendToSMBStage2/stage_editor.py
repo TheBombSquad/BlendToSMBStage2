@@ -265,6 +265,7 @@ class VIEW3D_PT_4_export_panel(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
+        layout.prop(context.scene, "stage_game_mode")
         layout.prop(context.scene, "export_timestep")
         layout.prop(context.scene, "export_value_round")
         layout.prop(context.scene, "export_time_round")

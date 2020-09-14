@@ -27,6 +27,10 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
         # Fallout plane height
         etree.SubElement(root, "falloutPlane", y=str(context.scene.falloutProp))
 
+        # Game mode
+        stageType = etree.SubElement(root, "stageType") 
+        stageType.text = str(context.scene.stage_game_mode)
+
         #TODO: This is kind-of a hack to work around stuff being funky with the first item group
         dummyIg = etree.SubElement(root, "itemGroup") 
         grid = etree.SubElement(dummyIg, "collisionGrid")
