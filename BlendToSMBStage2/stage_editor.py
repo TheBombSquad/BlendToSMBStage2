@@ -3,10 +3,13 @@ import bgl
 import enum
 import os
 import copy
+import subprocess
+import sys
 
 from . import statics, descriptors, stage_object_drawing
 from bpy.props import BoolProperty, PointerProperty, EnumProperty
 from enum import Enum
+from sys import platform
 
 class OBJECT_OT_add_external_objects(bpy.types.Operator):
     bl_idname = "object.add_external_objects"
@@ -267,9 +270,18 @@ class VIEW3D_PT_4_export_panel(bpy.types.Panel):
         layout.prop(context.scene, "export_time_round")
         layout.prop(context.scene, "export_config_path")
         layout.prop(context.scene, "export_model_path")
+        layout.prop(context.scene, "export_gma_path")
+        layout.prop(context.scene, "export_tpl_path")
+        layout.prop(context.scene, "export_raw_stagedef_path")
+        layout.prop(context.scene, "export_stagedef_path")
         layout.prop(context.scene, "auto_path_names")
         layout.operator("object.generate_config", text="Generate Config")
         layout.operator("object.export_obj", text="Export OBJ")
+        layout.operator("object.export_gmatpl", text="Export GMA/TPL")
+        export_lz_raw = layout.operator("object.export_stagedef", text="Export LZ.RAW")
+        export_lz_raw.compressed = False;
+        export_lz = layout.operator("object.export_stagedef", text="Export LZ")
+        export_lz.compressed = True;
 
 class VIEW3D_PT_5_settings(bpy.types.Panel):
     bl_idname = "VIEW3D_PT_5_settings"
@@ -333,8 +345,13 @@ def draw_callback_3d(self, context):
 
 def autoPathNames(self, context):
     if context.scene.auto_path_names:
-        context.scene.export_config_path = "//" + os.path.splitext(os.path.basename(bpy.context.blend_data.filepath))[0] + ".xml"
-        context.scene.export_model_path = "//" + os.path.splitext(os.path.basename(bpy.context.blend_data.filepath))[0] + ".obj"
+        default_filename = "//" + os.path.splitext(os.path.basename(bpy.context.blend_data.filepath))[0]
+        context.scene.export_config_path = default_filename + ".xml"
+        context.scene.export_model_path = default_filename + ".obj"
+        context.scene.export_gma_path = default_filename + ".gma"
+        context.scene.export_tpl_path = default_filename + ".tpl"
+        context.scene.export_raw_stagedef_path = default_filename + ".lz.raw"
+        context.scene.export_stagedef_path = default_filename + ".lz"
 
 class OBJECT_OT_set_backface_culling(bpy.types.Operator):
     bl_idname = "object.set_backface_culling"
@@ -526,6 +543,54 @@ class OBJECT_OT_export_obj(bpy.types.Operator):
                 obj.matrix_world = orig_matrix_dict[obj.name]
 
         print("Finished exporting OBJ")
+        return {'FINISHED'}
+
+class OBJECT_OT_export_gmatpl(bpy.types.Operator):
+    bl_idname = "object.export_gmatpl"
+    bl_label = "Export OBJ"
+    bl_description = "Export an OBJ, then call GxModelViewer to export a GMA/TPL to the specified path"
+    def execute(self, context):
+        bpy.ops.object.export_obj("INVOKE_DEFAULT")
+        obj_path = bpy.path.abspath(context.scene.export_model_path)
+        gma_path = bpy.path.abspath(context.scene.export_gma_path)
+        tpl_path = bpy.path.abspath(context.scene.export_tpl_path)
+        gx_path = bpy.utils.script_path_user() + "/addons/BlendToSMBStage2/GxUtils/GxModelViewer.exe"
+
+        subprocess.run([gx_path, 
+                        "-importObjMtl", obj_path,
+                        "-removeUnusedTextures",
+                        "-exportGma", gma_path,
+                        "-exportTpl", tpl_path])
+        
+        return {'FINISHED'}
+
+class OBJECT_OT_export_stagedef(bpy.types.Operator):
+    bl_idname = "object.export_stagedef"
+    bl_label = "Export OBJ"
+    bl_description = "Export an OBJ, then call Workshop 2 to export a LZ/LZ.RAW to the specified path."
+
+    compressed: bpy.props.BoolProperty(default=True)
+    def execute(self, context):
+        bpy.ops.object.generate_config("INVOKE_DEFAULT")
+        config_path = bpy.path.abspath(context.scene.export_config_path)
+        stagedef_path = bpy.path.abspath(context.scene.export_stagedef_path)
+        raw_stagedef_path = bpy.path.abspath(context.scene.export_raw_stagedef_path)
+
+        if platform == "linux" or platform == "linux2":
+            ws_path = bpy.utils.script_path_user() + "/addons/BlendToSMBStage2/ws2lzfrontend/ws2lzfrontend"
+        else:
+            ws_path = bpy.utils.script_path_user() + "/addons/BlendToSMBStage2/ws2lzfrontend/ws2lzfrontend.exe"
+
+        command_args = [ws_path,
+                        "-c" + config_path]
+
+        if self.compressed:
+            command_args.append("-s" + stagedef_path)
+        else:
+            command_args.append("-o" + raw_stagedef_path)
+
+        subprocess.run(command_args)
+
         return {'FINISHED'}
 
 # TODO: Replace with the more efficient implementation of this

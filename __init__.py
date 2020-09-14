@@ -153,6 +153,9 @@ def load_handler(dummy):
                     image_texture_node = node
                 elif (node.type =='BSDF_DIFFUSE'):
                     diffuse_node = node
+                #else:
+                    #print("Removing extraneous node" + str(node))
+                    #nodes.remove(node)
 
             # Convert Diffuse BSDF nodes to Principled BSDF
             if diffuse_node is not None:
@@ -206,6 +209,30 @@ def register():
             subtype='FILE_PATH',
             default="//model.obj"
     )
+    bpy.types.Scene.export_gma_path = bpy.props.StringProperty(
+            name="GMA Export Path",
+            description="The path to export the model to",
+            subtype='FILE_PATH',
+            default="//model.gma"
+    )
+    bpy.types.Scene.export_tpl_path = bpy.props.StringProperty(
+            name="TPL Export Path",
+            description="The path to export the model to",
+            subtype='FILE_PATH',
+            default="//model.tpl"
+    )
+    bpy.types.Scene.export_raw_stagedef_path = bpy.props.StringProperty(
+            name="LZ.RAW Export Path",
+            description="The path to export the raw stagedef to",
+            subtype='FILE_PATH',
+            default="//stagedef.lz.raw"
+    )
+    bpy.types.Scene.export_stagedef_path = bpy.props.StringProperty(
+            name="LZ Export Path",
+            description="The path to export the compressed stagedef to",
+            subtype='FILE_PATH',
+            default="//stagedef.lz"
+    )
     bpy.types.Scene.falloutProp = bpy.props.IntProperty(
             name="Fallout Plane",
             description="Height of the fallout plane",
@@ -255,6 +282,10 @@ def unregister():
     del bpy.types.Scene.export_time_round
     del bpy.types.Scene.export_config_path
     del bpy.types.Scene.export_model_path
+    del bpy.types.Scene.export_gma_path
+    del bpy.types.Scene.export_tpl_path
+    del bpy.types.Scene.export_raw_stagedef_path
+    del bpy.types.Scene.export_stagedef_path
     del bpy.types.Scene.draw_falloutProp
     del bpy.types.Scene.draw_stage_objects
     del bpy.types.Scene.draw_collision_grid
