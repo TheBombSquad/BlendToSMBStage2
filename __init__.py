@@ -2,8 +2,10 @@ import bpy
 import importlib
 import inspect
 import traceback
+import pdb
+
 from . import developer_utils
-from .BlendToSMBStage2 import stage_editor, statics, descriptors, menus
+from .BlendToSMBStage2 import stage_editor, statics, menus
 from bpy.app.handlers import persistent
 
 bl_info = {
@@ -11,7 +13,7 @@ bl_info = {
     "description": "Addon for creating Super Monkey Ball stage configuration files",
     "author": "CraftedCart, The BombSquad",
     "version": (2, 0),
-    "blender": (2, 82, 7),
+    "blender": (2, 82, 7), 
     "location": "View3D",
     "category": "3D View",
 }
@@ -43,13 +45,16 @@ def load_handler(dummy):
         # Item Groups
         if "[IG]" in obj.name:
             # Properties with changed names
-            if "initPlaying" in obj.keys():
-                obj["_initPlaying"] = obj["initPlaying"]
-                del obj["initPlaying"]
-            if "loopAnim" in obj.keys():
-                obj["_loopAnim"] = obj["loopAnim"]
-                del obj["loopAnim"]
+            # Properties with _ in the beginning of their name were used for a hacky RNA property display thing
+            # This isn't used anymore, so they're removed
+            if "_initPlaying" in obj.keys():
+                obj["initPlaying"] = obj["_initPlaying"]
+                del obj["_initPlaying"]
+            if "_loopAnim" in obj.keys():
+                obj["loopAnim"] = obj["_loopAnim"]
+                del obj["_loopAnim"]
 
+            # "loopTime" was renamed to "animLoopTime" for clarity
             if "loopTime" in obj.keys():
                 obj["animLoopTime"] = obj["loopTime"]
                 del obj["loopTime"]
@@ -87,8 +92,11 @@ def load_handler(dummy):
                 obj["conveyorZ"] = 0.0
         # Goals
         if obj.name.startswith("[GOAL_"):
-            if "_cast_shadow" not in obj.keys():
-                obj["_cast_shadow"] = True
+            if "_cast_shadow" in obj.keys():
+                obj["cast_shadow"] = obj["_cast_shadow"]
+                del obj["_cast_shadow"]
+            if "cast_shadow" not in obj.keys():
+                obj["cast_shadow"] = True
 
         # Wormholes
         if obj.name.startswith("[WH]"):
@@ -98,11 +106,14 @@ def load_handler(dummy):
             if "_id" in obj.keys():
                 obj["whId"] = obj["_id"]
                 del obj["_id"]
-            if "_linkedId" in obj.keys(): 
-                obj["linkedId"] = obj["_linkedId"]
-                del obj["_linkedId"]
-            if "_linkedObject" not in obj.keys():
-                obj["_linkedObject"] = None
+            if "linkedId" in obj.keys(): 
+                obj["_linkedId"] = obj["linkedId"]
+                del obj["linkedId"]
+            if "_linkedObject" in obj.keys():
+                obj["linkedObject"] = obj["_linkedObject"]
+                del obj["_linkedObject"]
+            if "linkedObject" not in obj.keys():
+                obj["linkedObject"] = None
 
         # Switches
         if obj.name.startswith("[SW_"):
@@ -112,8 +123,11 @@ def load_handler(dummy):
             if "animId" in obj.keys():
                 obj["linkedId"] = obj["animId"]
                 del obj["animId"]
-            if "_linkedObject" not in obj.keys():
-                obj["_linkedObject"] = None
+            if "_linkedObject" in obj.keys():
+                obj["linkedObject"] = obj["_linkedObject"]
+                del obj["_linkedObject"]
+            if "linkedObject" not in obj.keys():
+                obj["linkedObject"] = None
 
         # BG objects
         if obj.name.startswith("[BG]"):
@@ -126,11 +140,6 @@ def load_handler(dummy):
             if "texScrollVSpeed" not in obj.keys():
                 obj["texScrollVSpeed"] = 0.0
         
-        # Set up UI for objects
-        for desc in descriptors.descriptors_all:
-            if desc.get_object_name() in obj.name:
-                desc.rna_ui_setup(obj)
-
     for mat in bpy.data.materials:
         # Enable backface culling for all materials
         if hasattr(mat, 'use_backface_culling'):
@@ -179,6 +188,7 @@ def register():
         traceback.print_exc()
     
 
+    # Various scene properties for paths/global stage properties
     bpy.types.Scene.export_timestep = bpy.props.IntProperty(
             name="Animation Timestep",
             description="Determines how often animation frames are sampled",
@@ -272,7 +282,21 @@ def register():
             default='MAIN_GAME'
     )
 
-    bpy.types.Object.stage_object_properties = bpy.props.CollectionProperty(type=stage_editor.StageObjectPropertyProxy)
+    # Special properties for Monkey Ball objects (also for fancy UI property display)
+    bpy.types.Object.item_group_properties = bpy.props.PointerProperty(
+            type=stage_editor.ItemGroupProperties)
+    bpy.types.Object.alt_model_properties = bpy.props.PointerProperty(
+            type=stage_editor.AltModelProperties)
+    bpy.types.Object.stage_model_properties = bpy.props.PointerProperty(
+            type=stage_editor.StageModelProperties)
+    bpy.types.Object.goal_properties = bpy.props.PointerProperty(
+            type=stage_editor.GoalProperties)
+    bpy.types.Object.start_properties = bpy.props.PointerProperty(
+            type=stage_editor.StartProperties)
+    bpy.types.Object.wormhole_properties = bpy.props.PointerProperty(
+            type=stage_editor.WormholeProperties)
+    bpy.types.Object.switch_properties = bpy.props.PointerProperty(
+            type=stage_editor.SwitchProperties)
 
     menus.handle_register()
 
@@ -301,7 +325,13 @@ def unregister():
     del bpy.types.Scene.optimize_keyframes
     del bpy.types.Scene.falloutProp
     del bpy.types.Scene.stage_game_mode
-    del bpy.types.Object.stage_object_properties
+    del bpy.types.Object.item_group_properties 
+    del bpy.types.Object.alt_model_properties 
+    del bpy.types.Object.stage_model_properties 
+    del bpy.types.Object.goal_properties 
+    del bpy.types.Object.start_properties 
+    del bpy.types.Object.wormhole_properties 
+    del bpy.types.Object.switch_properties 
 
     try:
         # Remove draw handlers

@@ -8,134 +8,176 @@ if platform == "linux" or platform == "linux2":
 else:
     import xml.etree.ElementTree as etree
 
-from . import descriptors
+# Generate an object entry with any of the following: position, rotation, scale 
+def generate_generic_obj_element(obj, obj_type, parent, *, position=False, rotation=False, scale=False, name=True):
+    loc = obj.matrix_world.to_translation()
+    rot = obj.matrix_world.to_euler("XZY")
 
-class OBJECT_OT_generate_config(bpy.types.Operator):
-    bl_idname = "object.generate_config"
-    bl_label = "Generate Config"
-    bl_description = "Generate .XML file for config export"
-
-    def execute(self, context):
-        print("Generating config...")
-
-        root = etree.Element("superMonkeyBallStage", version="1.2.0")
-        
-        # OBJ file path
-        modelImport = etree.SubElement(root, "modelImport")
-        modelImport.text = context.scene.export_model_path
-
-        # Fallout plane height
-        etree.SubElement(root, "falloutPlane", y=str(context.scene.falloutProp))
-
-        # Game mode
-        stageType = etree.SubElement(root, "stageType") 
-        stageType.text = str(context.scene.stage_game_mode)
-
-        #TODO: This is kind-of a hack to work around stuff being funky with the first item group
-        dummyIg = etree.SubElement(root, "itemGroup") 
-        grid = etree.SubElement(dummyIg, "collisionGrid")
-
-        etree.SubElement(grid, "start", x = "-256", z = "-256")
-        etree.SubElement(grid, "step", x = "32", z = "32")
-        etree.SubElement(grid, "count", x = "16", z = "16")
-
-        igs = []
-        
-        # Start frame of animation
-        begin_frame = context.scene.frame_start
-
-        # Marks objects that don't have keyframes on frame 0
-        remove_beginframe_objs = []
-
-        # Iterate over all top-level objects
-        for obj in [obj for obj in bpy.context.scene.objects if (obj.type == 'EMPTY' or obj.type == 'MESH')]:
-            if "[IG]" in obj.name: 
-                igs.append(obj)
-                context.scene.frame_set(begin_frame)
-
-                # Semi-hacky way to get the object's center of rotation to work properly
-                # B2SMB1 inadvertently fixed this by baking *all* keyframes
-                begin_keyframe_exists = False
-                if obj.animation_data is not None and obj.animation_data.action is not None:
-                    fcurves = obj.animation_data.action.fcurves
-                    for index in [0, 1, 2]:
-                        for curve_type in ["location", "rotation_euler"]:
-                            fcurve = fcurves.find(curve_type, index=index)
-                            if fcurve is not None:
-                                for keyframe_index in range(len(fcurve.keyframe_points)):
-                                    if fcurve.keyframe_points[keyframe_index].co[0] == float(begin_frame):
-                                        begin_keyframe_exists = True
-                                        break
-                        else: continue
-                        break
-
-                # Remove the beginning keyframe if it didn't exist prior to it being added
-                if not begin_keyframe_exists:
-                    remove_beginframe_objs.append(obj)
-
-                print("\tInserted frame zero keyframe for item group " + obj.name)
-                obj.keyframe_insert("location", frame=begin_frame, options={'INSERTKEY_NEEDED'})
-                obj.keyframe_insert("rotation_euler", frame=begin_frame, options={'INSERTKEY_NEEDED'})
-
-            for desc in descriptors.descriptors_nonig:
-                match_descriptor = False
-                if obj.name.startswith(desc.get_object_name()): 
-                    match_descriptor = True
-                    desc.generate_xml(root, obj)
-                    continue
-
-        # Iterator over all item groups
-        for ig in igs: 
-            context.scene.frame_set(begin_frame)
-            # Children list
-            ig_children = [obj for obj in bpy.context.scene.objects if obj.parent == ig]
-            ig_children.append(ig)
-
-            # Generate item group XML elements
-            if 'collisionStartX' in ig.keys():
-                xig = descriptors.DescriptorIG.generate_xml(root, ig)
-
-            else:
-                continue
-
-            # Animation
-            if ig.animation_data is not None and ig.animation_data.action is not None:
-                descriptors.addAnimation(ig, xig)
-
-            # Children of item groups
-            for child in ig_children:
-                context.scene.frame_set(begin_frame)
-                match_descriptor = False
-
-                # Generate elements for listed descriptors (except IGs)
-                for desc in descriptors.descriptors:
-                    if desc.get_object_name() in child.name and not "[IG]" in child.name:
-                        match_descriptor = True
-                        desc.generate_xml(xig, child)
-                        break
-                
-                # Object is not a listed descriptor
-                if match_descriptor == False:
-                    if child.data != None:
-                        descriptors.DescriptorModel.generate_xml(xig, child)
-
-
-        context.scene.frame_set(begin_frame)
-
-        print("Completed, saving...")
-        if platform == "linux" or platform == "linux2":
-            config = etree.tostring(root, pretty_print=True, encoding="unicode")
+    print("\tObject of type: " + obj_type)
+    sub = etree.SubElement(parent, obj_type)
+    if name:
+        nameE = etree.SubElement(sub, "name")
+        if '[WH]' in obj.name:
+            nameE.text = str(obj["whId"])
         else:
-            config = etree.tostring(root, encoding="unicode")
-        config_file = open(bpy.path.abspath(context.scene.export_config_path), "w")
-        config_file.write(config)
-        config_file.close()
-        print("Finished generating config")
+            nameE.text = obj.name
 
-        # Remove the beginning keyframe if it didn't exist prior to it being added
-        for obj in remove_beginframe_objs:
-            print("Deleted frame zero keyframe for item group " + obj.name)
-            obj.keyframe_delete("location", frame=begin_frame)
-            obj.keyframe_delete("rotation_euler", frame=begin_frame)
+    if position:
+        etree.SubElement(sub, "position", x=str(loc.x), y=str(loc.z), z=str(-loc.y))
+    if rotation:
+        etree.SubElement(sub, "rotation", x=str(math.degrees(rot.x)), y=str(math.degrees(rot.z)), z=str(math.degrees(-rot.y)))
+    if scale:
+        etree.SubElement(sub, "scale", x=str(obj.scale.x), y=str(obj.scale.z), z=str(obj.scale.y))
 
-        return {'FINISHED'}
+    return sub
+
+def addKeyframes(parent, selector, fcurve):
+    startFrame = bpy.context.scene.frame_start
+    endFrame = bpy.context.scene.frame_end
+    active = bpy.context.view_layer.objects.active
+
+    if "animLoopTime" in active:
+        if active["animLoopTime"] != -1.0:
+            endFrame = startFrame + int(round(active["animLoopTime"]*60))-1
+
+    bpy.context.scene.frame_set(0)
+    prev_val = None
+    
+    timestep = bpy.context.scene.export_timestep
+    optimize = bpy.context.scene.optimize_keyframes
+
+    if "exportTimestep" in active: 
+        if active["exportTimestep"] != -1:
+            timestep = bpy.context.view_layer.objects.active["exportTimestep"]
+
+    for i in range(startFrame, endFrame, timestep):
+        bpy.context.scene.frame_set(i)
+        seconds = round((i-startFrame)/bpy.context.scene.render.fps, bpy.context.scene.export_time_round)
+        val = round(selector(bpy.context.view_layer.objects.active), bpy.context.scene.export_value_round)
+        current_fcurve = fcurve(bpy.context.view_layer.objects.active.animation_data.action)
+
+        if (optimize and  (val == prev_val)):
+            if current_fcurve is not None:
+                for keyframe_point in current_fcurve.keyframe_points:
+                    if keyframe_point.co[0] == float(bpy.context.scene.frame_current): 
+                        fcurve_type = current_fcurve.data_path
+                        if fcurve_type == "rotation_euler":
+                            value = round(math.degrees(keyframe_point.co[1]), bpy.context.scene.export_value_round)
+                        else:
+                            value = round(keyframe_point.co[1], bpy.context.scene.export_value_round)
+
+                        if current_fcurve.array_index == 1 and fcurve_type != "scale": value = -1*value
+                        
+                        keyframe = etree.Element("keyframe")
+                        keyframe.set("time", str(seconds))
+                        keyframe.set("value", str(value))
+                        keyframe.set("easing", "LINEAR")
+                        parent.append(keyframe)
+                        break
+        else:
+            prev_val = val
+            keyframe = etree.Element("keyframe")
+            keyframe.set("time", str(seconds))
+            keyframe.set("value", str(val))
+            keyframe.set("easing", "LINEAR")
+            parent.append(keyframe)
+
+def addPosXAnim(parent):
+    addKeyframes(parent, lambda i: i.location.x, lambda f: f.fcurves.find("location", index=0))
+
+def addPosYAnim(parent):
+    addKeyframes(parent,lambda i: -i.location.y, lambda f: f.fcurves.find("location", index=1))
+
+def addPosZAnim(parent):
+    addKeyframes(parent,lambda i: i.location.z, lambda f: f.fcurves.find("location", index=2))
+
+def addRotXAnim(parent):
+    addKeyframes(parent,lambda i: math.degrees(i.rotation_euler.x), lambda f: f.fcurves.find("rotation_euler", index=0))
+
+def addRotYAnim(parent):
+    addKeyframes(parent,lambda i: -math.degrees(i.rotation_euler.y), lambda f: f.fcurves.find("rotation_euler", index=1))
+
+def addRotZAnim(parent):
+    addKeyframes(parent,lambda i: math.degrees(i.rotation_euler.z), lambda f: f.fcurves.find("rotation_euler", index=2))
+
+def addScaleXAnim(parent):
+    addKeyframes(parent, lambda i: i.scale.x, lambda f: f.fcurves.find("scale", index=0))
+
+def addScaleYAnim(parent):
+    addKeyframes(parent,lambda i: i.scale.y, lambda f: f.fcurves.find("scale", index=1))
+
+def addScaleZAnim(parent):
+    addKeyframes(parent,lambda i: i.scale.z, lambda f: f.fcurves.find("scale", index=2))
+
+def addAnimation(obj, parent):
+    print("\tChecking for animation...")
+    bpy.context.view_layer.objects.active = obj
+
+    animKeyframes = etree.Element("animKeyframes")
+    hasInserted = False
+
+    fcurves = obj.animation_data.action.fcurves
+
+    if fcurves.find("location", index=0):
+        print("\t\tAdding X Pos keyframes...")
+        posX = etree.SubElement(animKeyframes, "posX")
+        addPosXAnim(posX)
+        if not hasInserted:
+            parent.append(animKeyframes)
+            hasInserted = True
+    if fcurves.find("location", index=1):
+        print("\t\tAdding Y Pos keyframes...")
+        posZ = etree.SubElement(animKeyframes, "posZ")
+        addPosYAnim(posZ)
+        if not hasInserted:
+            parent.append(animKeyframes)
+            hasInserted = True
+    if fcurves.find("location", index=2):
+        print("\t\tAdding Z Pos keyframes...")
+        posY = etree.SubElement(animKeyframes, "posY")
+        addPosZAnim(posY)
+        if not hasInserted:
+            parent.append(animKeyframes)
+            hasInserted = True
+    if fcurves.find("rotation_euler", index=0):
+        print("\t\tAdding X Rot keyframes...")
+        rotX = etree.SubElement(animKeyframes, "rotX")
+        addRotXAnim(rotX)
+        if not hasInserted:
+            parent.append(animKeyframes)
+            hasInserted = True
+    if fcurves.find("rotation_euler", index=1):
+        print("\t\tAdding Y Rot keyframes...")
+        rotZ = etree.SubElement(animKeyframes, "rotZ")
+        addRotYAnim(rotZ)
+        if not hasInserted:
+            parent.append(animKeyframes)
+            hasInserted = True
+    if fcurves.find("rotation_euler", index=2):
+        print("\t\tAdding Z Rot keyframes...")
+        rotY = etree.SubElement(animKeyframes, "rotY")
+        addRotZAnim(rotY)
+        if not hasInserted:
+            parent.append(animKeyframes)
+            hasInserted = True
+    if fcurves.find("scale", index=0):
+        print("\t\tAdding X Scale keyframes...")
+        scaleX = etree.SubElement(animKeyframes, "scaleX")
+        addScaleXAnim(scaleX)
+        if not hasInserted:
+            parent.append(animKeyframes)
+            hasInserted = True
+    if fcurves.find("scale", index=1):
+        print("\t\tAdding Y Scale keyframes...")
+        scaleZ = etree.SubElement(animKeyframes, "scaleZ")
+        addScaleYAnim(scaleZ)
+        if not hasInserted:
+            parent.append(animKeyframes)
+            hasInserted = True
+    if fcurves.find("scale", index=2):
+        print("\t\tAdding Z Scale keyframes...")
+        scaleY = etree.SubElement(animKeyframes, "scaleY")
+        addScaleZAnim(scaleY)
+        if not hasInserted:
+            parent.append(animKeyframes)
+            hasInserted = True 

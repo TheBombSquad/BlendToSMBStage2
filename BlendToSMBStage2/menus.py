@@ -1,6 +1,5 @@
 import bpy
 
-
 class VIEW3D_OT_cube_project_fixed(bpy.types.Operator):
     bl_idname = "uv.cube_project_fixed"
     bl_label = "Cube Projection (1.0 scale, fixed origin) [b2smb]"

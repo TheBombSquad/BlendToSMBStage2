@@ -6,10 +6,16 @@ import copy
 import subprocess
 import sys
 
-from . import statics, descriptors, stage_object_drawing
-from bpy.props import BoolProperty, PointerProperty, EnumProperty
+from . import statics, stage_object_drawing, generate_config
+from .descriptors import descriptors, descriptor_item_group, descriptor_model_stage
+from bpy.props import BoolProperty, PointerProperty, EnumProperty, FloatProperty, IntProperty
 from enum import Enum
 from sys import platform
+
+if platform == "linux" or platform == "linux2":
+    from lxml import etree
+else:
+    import xml.etree.ElementTree as etree
 
 class OBJECT_OT_add_external_objects(bpy.types.Operator):
     bl_idname = "object.add_external_objects"
@@ -87,7 +93,7 @@ class OBJECT_OT_convert_selected(bpy.types.Operator):
         selected.name = self.prefix + " " + selected.name
 
         # Construct the newly converted object
-        for desc in descriptors.descriptors_all:
+        for desc in descriptors.descriptors:
             if selected.name.startswith(desc.get_object_name()): 
                 desc.construct(selected)
 
@@ -234,28 +240,24 @@ class VIEW3D_PT_3_active_object_panel(bpy.types.Panel):
 
             properties.separator()
             
-            # Properties for selected item
-            for key in obj.keys():
-                friendly_name = str(key)
-                try:
-                    rna_ui_key = obj['_RNA_UI'][key]
-                    property_type = rna_ui_key['type']
-                    if 'name' in rna_ui_key.keys(): 
-                        friendly_name = rna_ui_key['name']
-                except KeyError:
-                    pass
-                else:   
-                    if property_type != 'int':
-                        sanitized_name = key[1::]
-                        for bool_prop in obj.stage_object_properties:
-                            if bool_prop.name == sanitized_name:
-                                properties.prop(bool_prop, sanitized_name)
-                                break
+        # Fancy UI properties
 
-                if key[0] !=  '_' :
-                    custom_prop = "[\"" +  key + "\"]"
-                    properties.prop(obj, custom_prop, text=friendly_name)
-        
+        if context.active_object is not None:
+            obj = context.active_object
+
+            is_descriptor = False
+            propertyGroup = []
+
+            for desc in descriptors.descriptors:
+                if desc.get_object_name() in obj.name:
+                    is_descriptor = True
+                    propertyGroup.append(desc.return_properties(obj))
+                    if "[MODEL]" not in obj.name: break
+
+            for group in [group for group in propertyGroup if group is not None]:
+                for ui_prop in group.__annotations__.keys():
+                    properties.prop(group, ui_prop)
+                
 class VIEW3D_PT_4_export_panel(bpy.types.Panel):
     bl_idname = "VIEW3D_PT_4_export_panel"
     bl_label = "Export"
@@ -333,15 +335,12 @@ def draw_callback_3d(self, context):
         # Draw objects
         for obj in bpy.data.objects:
             if obj.visible_get():
-                for desc in descriptors.descriptors_all:
+                for desc in descriptors.descriptors:
                     if desc.get_object_name() in obj.name:
                         desc.render(obj)
         # Draw fallout plane
         if bpy.context.scene.draw_falloutProp:
             FALLOUT_COLOR = (0.96, 0.26, 0.21, 0.3)
-            #lineWidth = [(6, stage_object_drawing.COLOR_BLACK), (2, stage_object_drawing.COLOR_RED)]
-            #for width, color in lineWidth:
-                #bgl.glLineWidth(width)
             stage_object_drawing.draw_grid(-512, -512, 32, 32, 32, 32, bpy.context.scene.falloutProp, FALLOUT_COLOR)
 
 def autoPathNames(self, context):
@@ -594,45 +593,252 @@ class OBJECT_OT_export_stagedef(bpy.types.Operator):
 
         return {'FINISHED'}
 
-# TODO: Replace with the more efficient implementation of this
-# This is a really hacky way to get boolean custom properties to show up as checkboxes
-def update_prop(self, context):
-    prop_name = '_' + self.name
-    context.active_object[prop_name] = self[self.name]
+class OBJECT_OT_generate_config(bpy.types.Operator):
+    bl_idname = "object.generate_config"
+    bl_label = "Generate Config"
+    bl_description = "Generate .XML file for config export"
 
-def update_linked_prop(self, context):
-    prop_name = "_" + self.name
-    linked_object = self[self.name]
-    context.active_object[prop_name] = linked_object
+    def execute(self, context):
+        print("Generating config...")
 
-    if "whId" in context.active_object.keys():
-        context.active_object["linkedId"] = linked_object["whId"] 
-    else:
-        context.active_object["linkedId"] = linked_object["animId"]
+        root = etree.Element("superMonkeyBallStage", version="1.2.0")
+        
+        # OBJ file path
+        modelImport = etree.SubElement(root, "modelImport")
+        modelImport.text = context.scene.export_model_path
 
-class StageObjectPropertyProxy(bpy.types.PropertyGroup):
-    cast_shadow: BoolProperty(name="Casts Shadow", update=update_prop)
-    receive_shadow: BoolProperty(name="Receives Shadow", update=update_prop)
-    unk3: BoolProperty(name="Unknown Flag 3", update=update_prop)
-    transparencyA: BoolProperty(name="Transparency Type A", update=update_prop)
-    transparencyB: BoolProperty(name="Transparency Type B", update=update_prop)
-    unk6: BoolProperty(name="Unknown Flag 6", update=update_prop)
-    unk7: BoolProperty(name="Unknown Flag 7", update=update_prop)
-    unk8: BoolProperty(name="Unknown Flag 8", update=update_prop)
+        # Fallout plane height
+        etree.SubElement(root, "falloutPlane", y=str(context.scene.falloutProp))
+
+        #TODO: This is kind-of a hack to work around stuff being funky with the first item group
+        dummyIg = etree.SubElement(root, "itemGroup") 
+        grid = etree.SubElement(dummyIg, "collisionGrid")
+
+        etree.SubElement(grid, "start", x = "-256", z = "-256")
+        etree.SubElement(grid, "step", x = "32", z = "32")
+        etree.SubElement(grid, "count", x = "16", z = "16")
+
+        igs = []
+        
+        # Start frame of animation
+        begin_frame = context.scene.frame_start
+
+        # Marks objects that don't have keyframes on frame 0
+        remove_beginframe_objs = []
+
+        # Iterate over all top-level objects
+        for obj in [obj for obj in bpy.context.scene.objects if (obj.type == 'EMPTY' or obj.type == 'MESH')]:
+            if "[IG]" in obj.name: 
+                igs.append(obj)
+                context.scene.frame_set(begin_frame)
+
+                # Semi-hacky way to get the object's center of rotation to work properly
+                # B2SMB1 inadvertently fixed this by baking *all* keyframes
+                begin_keyframe_exists = False
+                if obj.animation_data is not None and obj.animation_data.action is not None:
+                    fcurves = obj.animation_data.action.fcurves
+                    for index in [0, 1, 2]:
+                        for curve_type in ["location", "rotation_euler"]:
+                            fcurve = fcurves.find(curve_type, index=index)
+                            if fcurve is not None:
+                                for keyframe_index in range(len(fcurve.keyframe_points)):
+                                    if fcurve.keyframe_points[keyframe_index].co[0] == float(begin_frame):
+                                        begin_keyframe_exists = True
+                                        break
+                        else: continue
+                        break
+
+                # Remove the beginning keyframe if it didn't exist prior to it being added
+                if not begin_keyframe_exists:
+                    remove_beginframe_objs.append(obj)
+
+                print("\tInserted frame zero keyframe for item group " + obj.name)
+                obj.keyframe_insert("location", frame=begin_frame, options={'INSERTKEY_NEEDED'})
+                obj.keyframe_insert("rotation_euler", frame=begin_frame, options={'INSERTKEY_NEEDED'})
+
+            else:
+                # Non-item groups (start, BG/FG objects, etc)
+                for desc in descriptors.descriptors_root:
+                    match_descriptor = False
+                    if obj.name.startswith(desc.get_object_name()): 
+                        match_descriptor = True
+                        desc.generate_xml(root, obj)
+                        continue
+
+        # Iterator over all item groups
+        for ig in igs: 
+            context.scene.frame_set(begin_frame)
+            # Children list
+            ig_children = [obj for obj in bpy.context.scene.objects if obj.parent == ig]
+            ig_children.append(ig)
+
+            # Generate item group XML elements
+            if 'collisionStartX' in ig.keys():
+                xig = descriptor_item_group.DescriptorIG.generate_xml(root, ig)
+
+            else:
+                continue
+
+            # Animation
+            if ig.animation_data is not None and ig.animation_data.action is not None:
+                generate_config.addAnimation(ig, xig)
+
+            # Children of item groups
+            for child in ig_children:
+                context.scene.frame_set(begin_frame)
+                match_descriptor = False
+
+                # Generate elements for listed descriptors (except IGs)
+                for desc in descriptors.descriptors:
+                    if desc.get_object_name() in child.name and not "[IG]" in child.name:
+                        match_descriptor = True
+                        desc.generate_xml(xig, child)
+                        break
+                
+                # Object is not a listed descriptor
+                if match_descriptor == False:
+                    if child.data != None:
+                        descriptor_model_stage.DescriptorModel.generate_xml(xig, child)
+
+
+        context.scene.frame_set(begin_frame)
+
+        print("Completed, saving...")
+        if platform == "linux" or platform == "linux2":
+            config = etree.tostring(root, pretty_print=True, encoding="unicode")
+        else:
+            config = etree.tostring(root, encoding="unicode")
+        config_file = open(bpy.path.abspath(context.scene.export_config_path), "w")
+        config_file.write(config)
+        config_file.close()
+        print("Finished generating config")
+
+        # Remove the beginning keyframe if it didn't exist prior to it being added
+        for obj in remove_beginframe_objs:
+            print("Deleted frame zero keyframe for item group " + obj.name)
+            obj.keyframe_delete("location", frame=begin_frame)
+            obj.keyframe_delete("rotation_euler", frame=begin_frame)
+
+        return {'FINISHED'}
+
+def update_prop(self, context, prop):
+    if context.active_object is not None:
+        prop_value = getattr(self, prop)
+
+        # Cast string properties to ints (for enums)
+        if isinstance(prop_value, str):
+            prop_value = int(prop_value)
+
+        context.active_object[prop] = prop_value
+
+# Properties for item groups
+class ItemGroupProperties(bpy.types.PropertyGroup):
+    collisionStartX: FloatProperty(name="Collision Grid Start X",
+                              update=lambda s,c: update_prop(s, c, "collisionStartX"))
+    collisionStartY: FloatProperty(name="Collision Grid Start Y",
+                              update=lambda s,c: update_prop(s, c, "collisionStartY"))
+    collisionStepX: FloatProperty(name="Collision Grid Step X",
+                              update=lambda s,c: update_prop(s, c, "collisionStepX"))
+    collisionStepY: FloatProperty(name="Collision Grid Step Y",
+                              update=lambda s,c: update_prop(s, c, "collisionStepY"))
+    collisionStepCountX: IntProperty(name="Collision Grid Step Count X",
+                              update=lambda s,c: update_prop(s, c, "collisionStepCountX"))
+    collisionStepCountY: IntProperty(name="Collision Grid Step Count Y",
+                              update=lambda s,c: update_prop(s, c, "collisionStepCountY"))
+    animId: IntProperty(name="Animation ID",
+                              update=lambda s,c: update_prop(s, c, "animId"))
     initPlaying: EnumProperty(name="Initial Anim State", 
-            update=update_prop,
-            items=[('0','Paused',''),
-                ('1','Playing',''),
-                ('2','Reverse',''),
-                ('3','Fast Forward',''),
-                ('4','Fast Reverse',''),],
-            default='1'
-    )
+                              update=lambda s,c: update_prop(s, c, "initPlaying"),
+                              items=[('0','Paused',''),
+                                     ('1','Playing',''),
+                                     ('2','Reverse',''),
+                                     ('3','Fast Forward',''),
+                                     ('4','Fast Reverse',''),],
+                              default='1')
     loopAnim: EnumProperty(name="Animation Type",
-            update=update_prop,
-            items=[('0','Play Once Animation',''),
-                ('1','Looping Animation',''),
-                ('2','Seesaw','')],
-            default='1'
-    )
-    linkedObject: PointerProperty(name="Linked", type=bpy.types.Object, update=update_linked_prop)
+                            update=lambda s,c: update_prop(s, c, "loopAnim"),
+                            items=[('0','Play Once Animation',''),
+                                   ('1','Looping Animation',''),
+                                   ('2','Seesaw','')],
+                            default='1')
+    animLoopTime: FloatProperty(name="Loop Time (s)",
+                              update=lambda s,c: update_prop(s, c, "animLoopTime"))
+    conveyorX: FloatProperty(name="Conveyor X Force",
+                              update=lambda s,c: update_prop(s, c, "conveyorX"))
+    conveyorY: FloatProperty(name="Conveyor Y Force",
+                              update=lambda s,c: update_prop(s, c, "conveyorY"))
+    conveyorZ: FloatProperty(name="Conveyor Z Force",
+                              update=lambda s,c: update_prop(s, c, "conveyorZ"))
+    seesawSensitivity: FloatProperty(name="Seesaw Sensitivity",
+                              update=lambda s,c: update_prop(s, c, "seesawSensitivity"))
+    seesawFriction: FloatProperty(name="Seesaw Friction",
+                              update=lambda s,c: update_prop(s, c, "seesawFriction"))
+    seesawSpring: FloatProperty(name="Seesaw Spring",
+                              update=lambda s,c: update_prop(s, c, "seesawSpring"))
+    texScrollUSpeed:   FloatProperty(name="Horizontal Tex. Scroll Speed",
+                              update=lambda s,c: update_prop(s, c, "texScrollUSpeed"),
+                              default=-1.0)
+    texScrollVSpeed:   FloatProperty(name="Vertical Tex. Scroll Speed",
+                              update=lambda s,c: update_prop(s, c, "texScrollVSpeed"),
+                              default=-1.0)
+    exportTimestep: IntProperty(name="Export Timestep",
+                              update=lambda s,c: update_prop(s, c, "exportTimestep"))
+    collisionTriangleFlag: IntProperty(name="Collision Triangle Flag",
+                              update=lambda s,c: update_prop(s, c, "collisionTriangleFlag"))
+
+# Properties for non-stage models (background, foreground objects)
+class AltModelProperties(bpy.types.PropertyGroup):
+    animLoopTime: FloatProperty(name="Loop Time (s)",
+                              update=lambda s,c: update_prop(s, c, "animLoopTime"))
+    meshType:      IntProperty(name="Model Type",
+                              update=lambda s,c: update_prop(s, c, "meshType"))
+    texScrollUSpeed:   FloatProperty(name="Horizontal Tex. Scroll Speed",
+                              update=lambda s,c: update_prop(s, c, "texScrollUSpeed"))
+    texScrollVSpeedol:   FloatProperty(name="Vertical Tex. Scroll Speed",
+                              update=lambda s,c: update_prop(s, c, "texScrollVSpeed"))
+# Properties for stage models
+class StageModelProperties(bpy.types.PropertyGroup):
+    cast_shadow: BoolProperty(name="Casts Shadow",
+                              update=lambda s,c: update_prop(s, c, "cast_shadow"))
+    receive_shadow: BoolProperty(name="Receives Shadow",
+                              update=lambda s,c: update_prop(s, c, "receive_shadow"))
+    unk3: BoolProperty(name="Unknown Flag 3",
+                              update=lambda s,c: update_prop(s, c, "unk3"))
+    transparencyA: BoolProperty(name="Transparency Type A",
+                              update=lambda s,c: update_prop(s, c, "transparencyA"))
+    transparencyB: BoolProperty(name="Transparency Type B",
+                              update=lambda s,c: update_prop(s, c, "transparencyB"))
+    unk6: BoolProperty(name="Unknown Flag 6",
+                              update=lambda s,c: update_prop(s, c, "unk6"))
+    unk7: BoolProperty(name="Unknown Flag 7",
+                              update=lambda s,c: update_prop(s, c, "unk7"))
+    unk8: BoolProperty(name="Unknown Flag 8",
+                              update=lambda s,c: update_prop(s, c, "unk8"))
+
+# Properties for goals
+class GoalProperties(bpy.types.PropertyGroup):
+    cast_shadow: BoolProperty(name="Casts Shadow",
+                              update=lambda s,c: update_prop(s, c, "cast_shadow"))
+
+# Properties for starting positions
+class StartProperties(bpy.types.PropertyGroup):
+    playerId: IntProperty(name="Player #",
+                              update=lambda s,c: update_prop(s, c, "playerId"))
+
+# Properties for wormholes
+class WormholeProperties(bpy.types.PropertyGroup):
+    whId: IntProperty(name="Wormhole ID",
+                              update=lambda s,c: update_prop(s, c, "whId"))
+    linkedId: IntProperty(name="Linked ID",
+                              update=lambda s,c: update_prop(s, c, "linkedId"))
+    linkedObject: PointerProperty(name="Linked Object",
+                              type=bpy.types.Object,
+                              update=lambda s,c: update_prop(s, c, "linkedObject"))
+
+# Properties for switches
+class SwitchProperties(bpy.types.PropertyGroup):
+    linkedId: IntProperty(name="Linked ID",
+                              update=lambda s,c: update_prop(s, c, "linkedId"))
+    linkedObject: PointerProperty(name="Linked Object",
+                              type=bpy.types.Object,
+                              update=lambda s,c: update_prop(s, c, "linkedObject"))
