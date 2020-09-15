@@ -1,13 +1,13 @@
 from .descriptor_banana import DescriptorBanana
 from .descriptor_base import DescriptorBase
-#from .descriptor_booster import DescriptorBooster
+from .descriptor_booster import DescriptorBooster
 from .descriptor_bumper import DescriptorBumper
 from .descriptor_col_object_cone import DescriptorConeCol
 from .descriptor_col_object_sphere import DescriptorSphereCol
 from .descriptor_col_object_cylinder import DescriptorCylinderCol
 from .descriptor_fallout_volume import DescriptorFalloutVolume
 from .descriptor_goal import DescriptorGoal
-#from .descriptor_golf_hole import DescriptorGolfHole
+from .descriptor_golf_hole import DescriptorGolfHole
 from .descriptor_item_group import DescriptorIG
 from .descriptor_jamabar import DescriptorJamabar
 from .descriptor_model_bg import DescriptorBG
@@ -34,6 +34,8 @@ descriptors = {
     DescriptorStart,
     DescriptorBG,
     DescriptorFG,
+    DescriptorBooster,
+    DescriptorGolfHole,
 }
 
 # List of objects that are not children of item groups
@@ -41,5 +43,7 @@ descriptors_root = {
     DescriptorStart,
     DescriptorBG,
     DescriptorFG,
+    DescriptorGolfHole,
+    DescriptorBooster,
 }
 

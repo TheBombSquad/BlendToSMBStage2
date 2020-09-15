@@ -393,3 +393,30 @@ def draw_generic_sphere(obj, radius, color):
     bgl.glLineWidth(2)
     draw_sphere(ZERO_VEC, radius, color)
     gpu.matrix.pop()
+
+def draw_booster(obj):
+    gpu.matrix.push()
+    gpu.matrix.multiply_matrix(obj.matrix_world)
+    gpu.matrix.scale((1/obj.scale.x, 1/obj.scale.y, 1/obj.scale.z)) # No scaling
+
+    lineWidth = [(6, COLOR_BLACK), (2, COLOR_RED)]
+
+    for width, color in lineWidth:
+        bgl.glLineWidth(width)
+        draw_box_scaled(ZERO_VEC, (1,0.5,0), color)
+        draw_arrow((0, 0.1, 0), (0, 0.1, 0), color)
+
+    gpu.matrix.pop()
+
+def draw_golf_hole(obj):
+    gpu.matrix.push()
+    gpu.matrix.multiply_matrix(obj.matrix_world)
+    gpu.matrix.scale((1/obj.scale.x, 1/obj.scale.y, 1/obj.scale.z)) # No scaling
+
+    lineWidth = [(6, COLOR_BLACK), (2, COLOR_BLUE)]
+
+    for width, color in lineWidth:
+        bgl.glLineWidth(width)
+        draw_cylinder(ZERO_VEC, ZERO_VEC, 1, 0, 12, color)
+
+    gpu.matrix.pop()

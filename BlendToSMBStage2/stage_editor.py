@@ -151,6 +151,8 @@ class VIEW3D_PT_2_stage_object_panel(bpy.types.Panel):
     bl_region_type = "UI"
 
     def draw(self, context):
+        game_mode = context.scene.stage_game_mode
+
         layout = self.layout
         new_start = layout.operator("object.create_new_empty_and_select", text="Starting Position")
         new_start.name = "[START]"
@@ -202,6 +204,18 @@ class VIEW3D_PT_2_stage_object_panel(bpy.types.Panel):
         new_play.name = "[SW_PLAY] New Play Switch"
         new_fast_forward = switch_row.operator("object.create_new_empty_and_select", text=">>")
         new_fast_forward.name = "[SW_FF] New Fast Forward Switch"
+
+        if (game_mode == 'MONKEY_RACE_2'):
+            layout.label(text="Add Monkey Race Mechanics")
+
+            new_booster = layout.operator("object.create_new_empty_and_select", text="Booster")
+            new_booster.name = "[BOOSTER] Booster"
+
+        elif (game_mode == 'MONKEY_GOLF_2'):
+            layout.label(text="Add Monkey Golf Mechanics")
+
+            new_golf_hole = layout.operator("object.create_new_empty_and_select", text="Golf Hole")
+            new_golf_hole.name = "[GOLF_HOLE] Golf Hole"
 
 class VIEW3D_PT_3_active_object_panel(bpy.types.Panel):
     bl_idname = "VIEW3D_PT_3_active_object_panel"
