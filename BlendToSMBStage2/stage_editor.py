@@ -674,6 +674,10 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
         modelImport = etree.SubElement(root, "modelImport")
         modelImport.text = context.scene.export_model_path
 
+        # Game mode type
+        mode = etree.SubElement(root, "stageType")
+        mode.text = context.scene.stage_game_mode
+
         # Fallout plane height
         etree.SubElement(root, "falloutPlane", y=str(context.scene.falloutProp))
 
@@ -889,8 +893,8 @@ class GoalProperties(bpy.types.PropertyGroup):
 
 # Properties for starting positions
 class StartProperties(bpy.types.PropertyGroup):
-    playerId: IntProperty(name="Player #",
-                              update=lambda s,c: update_prop(s, c, "playerId"))
+    playerID: IntProperty(name="Player #",
+                              update=lambda s,c: update_prop(s, c, "playerID"))
 
 # Properties for wormholes
 class WormholeProperties(bpy.types.PropertyGroup):

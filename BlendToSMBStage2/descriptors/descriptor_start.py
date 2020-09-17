@@ -17,11 +17,17 @@ class DescriptorStart(DescriptorBase):
 
     @staticmethod
     def generate_xml(parent_element, obj):
-        generate_config.generate_generic_obj_element(obj, "start", parent_element, position=True, rotation=True, name=False)
+        sub = generate_config.generate_generic_obj_element(obj, "start", parent_element, position=True, rotation=True, name=False)
+        player_id = etree.SubElement(sub, "playerID")
+        player_id.text = str(obj.get("playerID", 1))
 
     @staticmethod
     def render(obj):
         stage_object_drawing.draw_start(obj)
+
+    @staticmethod
+    def construct(obj):
+        obj["playerID"] = 1
 
     @staticmethod
     def return_properties(obj):

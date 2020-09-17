@@ -20,8 +20,8 @@ class DescriptorTrackPath(DescriptorBase):
         print ("\tObject of type: trackPath")
         track_path_element = etree.SubElement(parent_element, "trackPath")
 
-        player_id = etree.SubElement(track_path_element, "playerId")
-        player_id.text = str(obj.get("playerId", 0))
+        player_id = etree.SubElement(track_path_element, "playerID")
+        player_id.text = str(obj.get("playerID", 1))
 
         spline_points = obj.data.splines[0].points
         for index, axisType in [(0, "posX"), (1,  "posY"), (2, "posZ")]:
@@ -35,7 +35,7 @@ class DescriptorTrackPath(DescriptorBase):
     
     @staticmethod
     def construct(obj):
-        obj["playerID"] = 0
+        obj["playerID"] = 1
 
     @staticmethod
     def return_properties(obj):
