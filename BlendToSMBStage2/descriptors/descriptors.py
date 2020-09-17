@@ -16,6 +16,7 @@ from .descriptor_model_stage import DescriptorModel
 from .descriptor_start import DescriptorStart
 from .descriptor_switch import DescriptorSwitch
 from .descriptor_wormhole import DescriptorWH
+from .descriptor_track_path import DescriptorTrackPath
 
 # List of all objects
 descriptors = {
@@ -36,6 +37,7 @@ descriptors = {
     DescriptorFG,
     DescriptorBooster,
     DescriptorGolfHole,
+    DescriptorTrackPath,
 }
 
 # List of objects that are not children of item groups
@@ -45,5 +47,6 @@ descriptors_root = {
     DescriptorFG,
     DescriptorGolfHole,
     DescriptorBooster,
+    DescriptorTrackPath,
 }
 

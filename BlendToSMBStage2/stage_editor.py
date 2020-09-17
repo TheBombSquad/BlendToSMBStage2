@@ -1,13 +1,15 @@
 import bpy
 import bgl
+import bmesh
 import enum
 import os
 import copy
 import subprocess
 import sys
+import mathutils
 
 from . import statics, stage_object_drawing, generate_config
-from .descriptors import descriptors, descriptor_item_group, descriptor_model_stage
+from .descriptors import descriptors, descriptor_item_group, descriptor_model_stage, descriptor_track_path
 from bpy.props import BoolProperty, PointerProperty, EnumProperty, FloatProperty, IntProperty
 from enum import Enum
 from sys import platform
@@ -211,6 +213,8 @@ class VIEW3D_PT_2_stage_object_panel(bpy.types.Panel):
             new_booster = layout.operator("object.create_new_empty_and_select", text="Booster")
             new_booster.name = "[BOOSTER] Booster"
 
+            new_path = layout.operator("object.generate_track_path", text="Track Path from Selected")
+
         elif (game_mode == 'MONKEY_GOLF_2'):
             layout.label(text="Add Monkey Golf Mechanics")
 
@@ -366,6 +370,55 @@ def autoPathNames(self, context):
         context.scene.export_tpl_path = default_filename + ".tpl"
         context.scene.export_raw_stagedef_path = default_filename + ".lz.raw"
         context.scene.export_stagedef_path = default_filename + ".lz"
+
+class OBJECT_OT_generate_track_path(bpy.types.Operator):
+    bl_idname = "object.generate_track_path"
+    bl_label = "Generate Track Path from Selected"
+    bl_descriptions = "Generates a track path from the selected faces."
+
+    def execute(self, context):
+        obj = bpy.context.active_object
+        mesh = bmesh.from_edit_mesh(obj.data)
+
+        # TODO: Calculate this mathemagically instead of relying on selection order
+        selected_faces = list(dict.fromkeys(mesh.select_history)) 
+
+        # Track paths must begin and end at the same point, so it's added at the start
+        selected_faces.append(selected_faces[0])
+
+        median_points = [face.calc_center_median() for face in selected_faces]
+
+        #point_kdtree = mathutils.kdtree.KDTree(len(median_points))
+
+        #for i, point in enumerate(median_points):
+        #    kd.insert(point.co, i)
+
+        #kd.balance()
+
+        #sorted_vertex_list = [active_median]
+
+        #current_median = active_median
+        #current_attempts = 0
+        #while current_median not in sorted_vertex_list:
+        #    if current_median == active_median:
+        #        sorted_vertex_list.append(active_median)
+
+        path_curve_data = bpy.data.curves.new('path', type='CURVE')
+        path_curve_data.dimensions = '3D'
+
+        path_spline = path_curve_data.splines.new('POLY')
+        path_spline.points.add(len(median_points)-1)
+        
+        for i, point in enumerate(median_points):
+            print("Added point " + str(point))
+            path_spline.points[i].co = (point[0], point[1], point[2], 1)
+
+        path_curve = bpy.data.objects.new('[PATH] Race Track Path', path_curve_data)
+        descriptor_track_path.DescriptorTrackPath.construct(path_curve)
+        context.collection.objects.link(path_curve)
+        path_curve.select_set(True)
+        return {'FINISHED'}
+
 
 class OBJECT_OT_set_backface_culling(bpy.types.Operator):
     bl_idname = "object.set_backface_culling"
@@ -641,7 +694,7 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
         remove_beginframe_objs = []
 
         # Iterate over all top-level objects
-        for obj in [obj for obj in bpy.context.scene.objects if (obj.type == 'EMPTY' or obj.type == 'MESH')]:
+        for obj in [obj for obj in bpy.context.scene.objects if (obj.type == 'EMPTY' or obj.type == 'MESH' or obj.type == 'CURVE')]:
             if "[IG]" in obj.name: 
                 igs.append(obj)
                 context.scene.frame_set(begin_frame)
