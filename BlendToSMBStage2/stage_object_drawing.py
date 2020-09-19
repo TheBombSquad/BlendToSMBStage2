@@ -403,7 +403,7 @@ def draw_booster(obj):
 
     for width, color in lineWidth:
         bgl.glLineWidth(width)
-        draw_box_scaled(ZERO_VEC, (1,0.5,0), color)
+        draw_box_scaled(ZERO_VEC, (2,1.0,0), color)
         draw_arrow((0, 0.1, 0), (0, 0.1, 0), color)
 
     gpu.matrix.pop()

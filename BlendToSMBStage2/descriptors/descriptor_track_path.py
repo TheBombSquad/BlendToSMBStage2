@@ -1,4 +1,5 @@
 import sys
+import bpy
 
 from sys import platform
 from .descriptor_base import DescriptorBase
@@ -24,13 +25,26 @@ class DescriptorTrackPath(DescriptorBase):
         player_id.text = str(obj.get("playerID", 1))
 
         spline_points = obj.data.splines[0].points
-        for index, axisType in [(0, "posX"), (1,  "posY"), (2, "posZ")]:
+        for index, axisType in [(0, "posX"), (2,  "posY"), (1, "posZ")]:
             axis = etree.SubElement(track_path_element, axisType)
             for i, point in enumerate(spline_points):
+                value = round(point.co[index], 4)
+
+                if index == 1: value = -1*value
+
+                if (i == 0 or i == len(spline_points)-1):
+                    delta = 0.0
+                else:
+                    prev_value = round(spline_points[i-1].co[index], 4)
+                    if index == 1: prev_value = -1*prev_value
+                    delta = value - prev_value
+
                 keyframe = etree.Element("keyframe")
-                keyframe.set("time", str(i))
-                keyframe.set("value", str(point.co[index]))
+                keyframe.set("time", str(float(i)))
+                keyframe.set("value", str(value))
                 keyframe.set("easing", "EASED")
+                keyframe.set("handleA", str(round(delta, 4))) 
+                keyframe.set("handleB", str(round(delta, 4))) 
                 axis.append(keyframe)
     
     @staticmethod
