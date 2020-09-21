@@ -7,6 +7,8 @@ import copy
 import subprocess
 import sys
 import mathutils
+import random
+import pdb
 
 from . import statics, stage_object_drawing, generate_config
 from .descriptors import descriptors, descriptor_item_group, descriptor_model_stage, descriptor_track_path
@@ -19,6 +21,7 @@ if platform == "linux" or platform == "linux2":
 else:
     import xml.etree.ElementTree as etree
 
+# Operator for adding external background objects
 class OBJECT_OT_add_external_objects(bpy.types.Operator):
     bl_idname = "object.add_external_objects"
     bl_label = "Add External Objects"
@@ -58,6 +61,7 @@ bpy.ops.object.confirm_add_external_objects("INVOKE_DEFAULT", objects=external_o
 
         return {'FINISHED'}
 
+# Operator that actually adds the listed external objects
 class OBJECT_OT_confirm_add_external_objects(bpy.types.Operator):
     bl_idname = "object.confirm_add_external_objects"
     bl_label = "Confirm Add External Objects"
@@ -73,6 +77,8 @@ class OBJECT_OT_confirm_add_external_objects(bpy.types.Operator):
             bpy.ops.object.create_new_empty_and_select("INVOKE_DEFAULT", name="[EXT:{}]".format(str(obj)))
         return  {'FINISHED'}
 
+# Operator for 'converting' the active object to a specific type
+# TODO: Make this remove tags so object names don't become cluttered
 class OBJECT_OT_convert_selected(bpy.types.Operator):
     bl_idname = "object.convert_selected"
     bl_label = "Convert Selected Item"
@@ -101,6 +107,7 @@ class OBJECT_OT_convert_selected(bpy.types.Operator):
 
         return {'FINISHED'}
 
+# Operator for creating a new empty with a specified name and setting up its properties
 class OBJECT_OT_create_new_empty_and_select(bpy.types.Operator):
     bl_idname = "object.create_new_empty_and_select"
     bl_label = "Create New Empty And Select"
@@ -130,7 +137,7 @@ class OBJECT_OT_create_new_empty_and_select(bpy.types.Operator):
         newEmpty.select_set(True)
         return {'FINISHED'}
 
-# Panels for the UI
+# UI panel for group creation 
 class VIEW3D_PT_1_item_group_panel(bpy.types.Panel):
     bl_idname = "VIEW3D_PT_1_item_group_panel"
     bl_label = "Item Groups"
@@ -145,6 +152,7 @@ class VIEW3D_PT_1_item_group_panel(bpy.types.Panel):
         new_item_group = layout.operator("object.create_new_empty_and_select", text="New Item Group")
         new_item_group.name = "[IG] New Item Group"
 
+# UI panel for stage object creation
 class VIEW3D_PT_2_stage_object_panel(bpy.types.Panel):
     bl_idname = "VIEW3D_PT_2_stage_object_panel"
     bl_label = "Add Stage Objects"
@@ -221,6 +229,7 @@ class VIEW3D_PT_2_stage_object_panel(bpy.types.Panel):
             new_golf_hole = layout.operator("object.create_new_empty_and_select", text="Golf Hole")
             new_golf_hole.name = "[GOLF_HOLE] Golf Hole"
 
+# UI panel for active object modification
 class VIEW3D_PT_3_active_object_panel(bpy.types.Panel):
     bl_idname = "VIEW3D_PT_3_active_object_panel"
     bl_label = "Active Object Settings"
@@ -256,10 +265,12 @@ class VIEW3D_PT_3_active_object_panel(bpy.types.Panel):
                 convert_level_model = properties.operator("object.convert_selected", text="Add Custom Model Properties")
                 convert_level_model.prefix = "[MODEL]"
 
+            if '[PATH]' in obj.name:
+                make_cpu_paths = properties.operator("object.generate_cpu_paths", text="Make CPU Paths from Selected")
+
             properties.separator()
             
         # Fancy UI properties
-
         if context.active_object is not None:
             obj = context.active_object
 
@@ -276,6 +287,7 @@ class VIEW3D_PT_3_active_object_panel(bpy.types.Panel):
                 for ui_prop in group.__annotations__.keys():
                     properties.prop(group, ui_prop)
                 
+# UI panel for various export options
 class VIEW3D_PT_4_export_panel(bpy.types.Panel):
     bl_idname = "VIEW3D_PT_4_export_panel"
     bl_label = "Export"
@@ -304,6 +316,7 @@ class VIEW3D_PT_4_export_panel(bpy.types.Panel):
         export_lz = layout.operator("object.export_stagedef", text="Export LZ")
         export_lz.compressed = True;
 
+# UI panel for global scene/stage settings
 class VIEW3D_PT_5_settings(bpy.types.Panel):
     bl_idname = "VIEW3D_PT_5_settings"
     bl_label = "Settings"
@@ -321,6 +334,7 @@ class VIEW3D_PT_5_settings(bpy.types.Panel):
         layout.operator("object.set_backface_culling")
         layout.prop(context.scene, "optimize_keyframes")
 
+# Operator for toggling the drawing of stage objects
 class VIEW3D_OT_draw_stage_objects(bpy.types.Operator):
     bl_idname = "view3d.draw_stage_objects"
     bl_label = "Draw Stage Objects"
@@ -346,6 +360,7 @@ class VIEW3D_OT_draw_stage_objects(bpy.types.Operator):
             self.report({"WARNING"}, "View3D not found, or stage visibility toggled off.")
             return {'CANCELLED'}
 
+# Callback function for drawing stage objects
 def draw_callback_3d(self, context):
     bgl.glEnable(bgl.GL_BLEND)
     bgl.glEnable(bgl.GL_DEPTH_TEST)
@@ -361,6 +376,7 @@ def draw_callback_3d(self, context):
             FALLOUT_COLOR = (0.96, 0.26, 0.21, 0.3)
             stage_object_drawing.draw_grid(-512, -512, 32, 32, 32, 32, bpy.context.scene.falloutProp, FALLOUT_COLOR)
 
+# Function for automatically setting up path names
 def autoPathNames(self, context):
     if context.scene.auto_path_names:
         default_filename = "//" + os.path.splitext(os.path.basename(bpy.context.blend_data.filepath))[0]
@@ -371,6 +387,7 @@ def autoPathNames(self, context):
         context.scene.export_raw_stagedef_path = default_filename + ".lz.raw"
         context.scene.export_stagedef_path = default_filename + ".lz"
 
+# Operator for generating a track path from selected faces
 class OBJECT_OT_generate_track_path(bpy.types.Operator):
     bl_idname = "object.generate_track_path"
     bl_label = "Generate Track Path from Selected"
@@ -383,43 +400,89 @@ class OBJECT_OT_generate_track_path(bpy.types.Operator):
         # TODO: Calculate this mathemagically instead of relying on selection order
         selected_faces = list(dict.fromkeys(mesh.select_history)) 
 
-        # Track paths must begin and end at the same point, so it's added at the start
+        # Track paths must begin and end at the same point, so we append the first face to the end
         selected_faces.append(selected_faces[0])
 
+        # Track path keyframes are generated from the median point of each keyframe
         median_points = [face.calc_center_median() for face in selected_faces]
 
-        #point_kdtree = mathutils.kdtree.KDTree(len(median_points))
+        if (len(median_points) > 101):
+            raise Exception("Track paths cannot have more than 100 points selected")
 
-        #for i, point in enumerate(median_points):
-        #    kd.insert(point.co, i)
+        # Track paths must have 101 keyframes, so we need to subdivide it
+        vert_count = len(median_points)
 
-        #kd.balance()
+        # Determine the number of times to subdivide the path
+        subdivision_count = 0
+        while True:
+            subdivision_count = subdivision_count + 1
+            final_vert_count = vert_count + (subdivision_count*(vert_count-1))
+            if final_vert_count >= 101:
+                break
+        
+        # Subdivide the path
+        subdivided_path = []
+        for i in range(0, len(median_points)-1):
+            print("added first pt for " + str(i))
+            subdivided_path.append(median_points[i])
 
-        #sorted_vertex_list = [active_median]
+            if subdivision_count is not 1:
+                for segment in range(1, subdivision_count):
+                    lerp_factor = segment/subdivision_count
+                    new_point = median_points[i].lerp(median_points[i+1], lerp_factor)
+                    subdivided_path.append(new_point)
+                    print("added pt w lerp factor " + str(lerp_factor))
 
-        #current_median = active_median
-        #current_attempts = 0
-        #while current_median not in sorted_vertex_list:
-        #    if current_median == active_median:
-        #        sorted_vertex_list.append(active_median)
+        print("added last pt")
+        subdivided_path.append(median_points[-1])
 
+        # Fill in the remainder of the points by randomly distributing them (definitely not the best way)
+        pdb.set_trace()
+        while len(subdivided_path) < 101:
+            target_index = random.randint(0, len(subdivided_path)-2)
+            target_index_vert = subdivided_path[target_index]
+            target_index_next = subdivided_path[target_index+1]
+            new_point = target_index_vert.lerp(target_index_next, 0.5) 
+            subdivided_path.insert(target_index+1, new_point)
+
+        # Create the curve object from the generated path
         path_curve_data = bpy.data.curves.new('path', type='CURVE')
         path_curve_data.dimensions = '3D'
 
         path_spline = path_curve_data.splines.new('POLY')
-        path_spline.points.add(len(median_points)-1)
+        path_spline.points.add(len(subdivided_path)-1)
         
-        for i, point in enumerate(median_points):
-            print("Added point " + str(point))
+        for i, point in enumerate(subdivided_path):
             path_spline.points[i].co = (point[0], point[1], point[2], 1)
 
         path_curve = bpy.data.objects.new('[PATH] Race Track Path', path_curve_data)
         descriptor_track_path.DescriptorTrackPath.construct(path_curve)
         context.collection.objects.link(path_curve)
-        path_curve.select_set(True)
+
         return {'FINISHED'}
 
+# Operator for generating CPU paths based on a player track path
+class OBJECT_OT_generate_cpu_paths(bpy.types.Operator):
+    bl_idname = "object.generate_cpu_paths"
+    bl_label = "Generate CPU Paths"
+    bl_descriptions = "Generates 7 CPU paths for the selected track path."
 
+    def execute(self, context):
+        path = bpy.context.active_object
+        copies = 0
+        while copies < 7:
+            path_dupe = path.copy()
+            path_dupe.data = path.data.copy()
+
+            # CPU paths are 0.5 above player paths
+            path_dupe.location[2] = path_dupe.location[2] + 0.5
+
+            context.collection.objects.link(path_dupe)
+            copies = copies+1
+
+        return {'FINISHED'}
+
+# Operator for setting backface culling on all materials of all objects
 class OBJECT_OT_set_backface_culling(bpy.types.Operator):
     bl_idname = "object.set_backface_culling"
     bl_label = "Set Backface Culling"
@@ -432,6 +495,7 @@ class OBJECT_OT_set_backface_culling(bpy.types.Operator):
 
         return {'FINISHED'}
 
+# Operator for exporting the stage model as a .OBJ file
 class OBJECT_OT_export_obj(bpy.types.Operator):
     bl_idname = "object.export_obj"
     bl_label = "Export OBJ"
@@ -612,6 +676,7 @@ class OBJECT_OT_export_obj(bpy.types.Operator):
         print("Finished exporting OBJ")
         return {'FINISHED'}
 
+# Operator for calling GxModelViewer to export the stage model as a .GMA and .TPL file
 class OBJECT_OT_export_gmatpl(bpy.types.Operator):
     bl_idname = "object.export_gmatpl"
     bl_label = "Export OBJ"
@@ -631,6 +696,7 @@ class OBJECT_OT_export_gmatpl(bpy.types.Operator):
         
         return {'FINISHED'}
 
+# Operator for calling Workshop 2 to export the stage config as a .LZ or .LZ.RAW file
 class OBJECT_OT_export_stagedef(bpy.types.Operator):
     bl_idname = "object.export_stagedef"
     bl_label = "Export OBJ"
@@ -660,6 +726,7 @@ class OBJECT_OT_export_stagedef(bpy.types.Operator):
 
         return {'FINISHED'}
 
+# Operator for exporting the stage config as a .XML file
 class OBJECT_OT_generate_config(bpy.types.Operator):
     bl_idname = "object.generate_config"
     bl_label = "Generate Config"
@@ -792,6 +859,7 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
 
         return {'FINISHED'}
 
+# Fucntion for updating the properties of an active object
 def update_prop(self, context, prop):
     if context.active_object is not None:
         prop_value = getattr(self, prop)
