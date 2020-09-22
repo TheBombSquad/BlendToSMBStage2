@@ -336,6 +336,10 @@ class VIEW3D_PT_5_settings(bpy.types.Panel):
         layout = self.layout
         layout.prop(context.scene, "falloutProp")
         layout.operator("view3d.draw_stage_objects")
+        layout.prop(context.scene, "fog_type")
+        layout.prop(context.scene, "fog_start_distance")
+        layout.prop(context.scene, "fog_end_distance")
+        layout.prop(context.scene, "fog_color")
         layout.prop(context.scene, "draw_stage_objects")
         layout.prop(context.scene, "draw_falloutProp")
         layout.prop(context.scene, "draw_collision_grid")
@@ -538,6 +542,9 @@ class OBJECT_OT_export_obj(bpy.types.Operator):
 
         # Cleans up models to fix common crashes
         print("Cleaning up meshes...")
+        if context.active_object is None:
+            context.view_layer.objects.active = context.scene.objects[0]
+
         bpy.ops.object.mode_set(mode='OBJECT')
         bpy.ops.object.select_all(action='DESELECT')
         for obj in [obj for obj in bpy.context.editable_objects if obj.type == 'MESH']:
@@ -794,6 +801,38 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
 
         # Fallout plane height
         etree.SubElement(root, "falloutPlane", y=str(context.scene.falloutProp))
+
+        # Fog 
+        fog_type = context.scene.fog_type
+        fog_start = context.scene.fog_start_distance
+        fog_end = context.scene.fog_end_distance
+        fog_red = context.scene.fog_color.r
+        fog_green = context.scene.fog_color.g
+        fog_blue = context.scene.fog_color.b 
+
+        fog = etree.SubElement(root, "fog")
+        fogType = etree.SubElement(fog, "type")
+        fogType.text = str(fog_type)
+        fogStart = etree.SubElement(fog, "start")
+        fogStart.text = str(fog_start)
+        fogEnd = etree.SubElement(fog, "end")
+        fogEnd.text = str(fog_end)
+        fogRed = etree.SubElement(fog, "red")
+        fogRed.text = str(fog_red)
+        fogGreen = etree.SubElement(fog, "green")
+        fogGreen.text = str(fog_green)
+        fogBlue = etree.SubElement(fog, "blue")
+        fogBlue.text = str(fog_blue)
+        
+        # Fog Animation (1 keyframe required to make it work
+        fogAnimation = etree.SubElement(root, "fogAnimationKeyframes")
+        for element_name, element_value in [("start", fog_start), ("end", fog_end), ("red", fog_red), ("green", fog_green), ("blue", fog_blue)]:
+            element = etree.SubElement(fogAnimation, element_name)
+            keyframe = etree.Element("keyframe")
+            keyframe.set("time", str(0.0))
+            keyframe.set("value", str(element_value))
+            keyframe.set("easing", "LINEAR")
+            element.append(keyframe)
 
         #TODO: This is kind-of a hack to work around stuff being funky with the first item group
         dummyIg = etree.SubElement(root, "itemGroup") 

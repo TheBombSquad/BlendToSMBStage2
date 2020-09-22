@@ -275,12 +275,38 @@ def register():
     )
     bpy.types.Scene.stage_game_mode = bpy.props.EnumProperty(
             name="Game Mode",
-            description="Game mode of the stage to  be exported.",
+            description="Game mode of the stage to be exported.",
             items=[('MAIN_GAME', 'Main Game', ''),
                    ('MONKEY_RACE_2', 'Monkey Race 2', ''),
                    ('MONKEY_GOLF_2', 'Monkey Golf 2', '')],
             default='MAIN_GAME'
     )
+
+    bpy.types.Scene.fog_type = bpy.props.EnumProperty(
+            name="Fog Type",
+            description="Type of fog for the stage",
+            items=[('GX_FOG_NONE', 'None', ''),
+                   ('GX_FOG_LIN', 'Linear', ''),
+                   ('GX_FOG_EXP', 'Exponential', ''),
+                   ('GX_FOG_EXP2', 'Exponential (2)', ''),
+                   ('GX_FOG_REVEXP', 'Reverse Exponential', ''),
+                   ('GX_FOG_REVEXP2', 'Reverse Exponential (2)', '')],
+            default='GX_FOG_NONE')
+
+    bpy.types.Scene.fog_start_distance = bpy.props.FloatProperty(
+            name="Fog Start",
+            description="Fog starting distance",
+            default=0.0)
+    
+    bpy.types.Scene.fog_end_distance = bpy.props.FloatProperty(
+            name="Fog End",
+            description="Fog ending distance",
+            default=0.0)
+    
+    bpy.types.Scene.fog_color = bpy.props.FloatVectorProperty(
+            name="Fog Color",
+            description="Fog color",
+            subtype='COLOR')
 
     # Special properties for Monkey Ball objects (also for fancy UI property display)
     bpy.types.Object.item_group_properties = bpy.props.PointerProperty(
@@ -327,11 +353,16 @@ def unregister():
     del bpy.types.Scene.stage_game_mode
     del bpy.types.Object.item_group_properties 
     del bpy.types.Object.alt_model_properties 
+
     del bpy.types.Object.stage_model_properties 
     del bpy.types.Object.goal_properties 
     del bpy.types.Object.start_properties 
     del bpy.types.Object.wormhole_properties 
     del bpy.types.Object.switch_properties 
+    del bpy.types.Scene.fog_type
+    del bpy.types.Scene.fog_start_distance
+    del bpy.types.Scene.fog_end_distance
+    del bpy.types.Scene.fog_color
 
     try:
         # Remove draw handlers
