@@ -19,7 +19,7 @@ class DescriptorStart(DescriptorBase):
     def generate_xml(parent_element, obj):
         sub = generate_config.generate_generic_obj_element(obj, "start", parent_element, position=True, rotation=True, name=False)
         player_id = etree.SubElement(sub, "playerID")
-        player_id.text = str(obj.get("playerID", 1))
+        player_id.text = str(int(obj.get("playerID", 1))-1)
 
     @staticmethod
     def render(obj):

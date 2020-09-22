@@ -22,7 +22,7 @@ class DescriptorTrackPath(DescriptorBase):
         track_path_element = etree.SubElement(parent_element, "trackPath")
 
         player_id = etree.SubElement(track_path_element, "playerID")
-        player_id.text = str(obj.get("playerID", 1))
+        player_id.text = str(int(obj.get("playerID", 1))-1)
 
         spline_points = obj.data.splines[0].points
         for index, axisType in [(0, "posX"), (2,  "posY"), (1, "posZ")]:

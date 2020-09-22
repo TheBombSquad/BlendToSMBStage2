@@ -8,13 +8,14 @@ import subprocess
 import sys
 import mathutils
 import random
-import pdb
+import math
 
 from . import statics, stage_object_drawing, generate_config
 from .descriptors import descriptors, descriptor_item_group, descriptor_model_stage, descriptor_track_path
 from bpy.props import BoolProperty, PointerProperty, EnumProperty, FloatProperty, IntProperty
 from enum import Enum
 from sys import platform
+from mathutils import Vector
 
 if platform == "linux" or platform == "linux2":
     from lxml import etree
@@ -26,6 +27,7 @@ class OBJECT_OT_add_external_objects(bpy.types.Operator):
     bl_idname = "object.add_external_objects"
     bl_label = "Add External Objects"
     bl_description = "Add external objects, such as those found in background files"
+    bl_options={'UNDO'} 
 
     def execute(self, context):
         #Create the text block
@@ -65,6 +67,7 @@ bpy.ops.object.confirm_add_external_objects("INVOKE_DEFAULT", objects=external_o
 class OBJECT_OT_confirm_add_external_objects(bpy.types.Operator):
     bl_idname = "object.confirm_add_external_objects"
     bl_label = "Confirm Add External Objects"
+    bl_options={'UNDO'} 
     
     objects: bpy.props.StringProperty()
 
@@ -83,7 +86,8 @@ class OBJECT_OT_convert_selected(bpy.types.Operator):
     bl_idname = "object.convert_selected"
     bl_label = "Convert Selected Item"
     bl_description = "Converts selected item to a specified type"
-    bl_options = {'UNDO'}
+    bl_options={'UNDO'} 
+
     prefix: bpy.props.StringProperty(default="[]")
 
     def execute(self, context):
@@ -112,7 +116,7 @@ class OBJECT_OT_create_new_empty_and_select(bpy.types.Operator):
     bl_idname = "object.create_new_empty_and_select"
     bl_label = "Create New Empty And Select"
     bl_description = "Creates a new empty object of a specified name"
-    bl_options = {'UNDO'}
+    bl_options={'UNDO'} 
     name: bpy.props.StringProperty(default="Empty")
 
     def execute(self, context):
@@ -246,24 +250,28 @@ class VIEW3D_PT_3_active_object_panel(bpy.types.Panel):
             properties.label(text=obj.name)
 
             # Various conversion options
-            convert_ig = properties.operator("object.convert_selected", text="Convert to Item Group")
-            convert_ig.prefix = "[IG]"
 
-            if obj.data is not None:
-                convert_bg = properties.operator("object.convert_selected", text="Convert to Background Object")
-                convert_bg.prefix = "[BG]"
-                convert_fg = properties.operator("object.convert_selected", text="Convert to Foreground Object")
-                convert_fg.prefix = "[FG]"
+            if '[PATH]' not in obj.name:
+                convert_ig = properties.operator("object.convert_selected", text="Convert to Item Group")
+                convert_ig.prefix = "[IG]"
+                if obj.data is not None:
+                    convert_bg = properties.operator("object.convert_selected", text="Convert to Background Object")
+                    convert_bg.prefix = "[BG]"
+                    convert_fg = properties.operator("object.convert_selected", text="Convert to Foreground Object")
+                    convert_fg.prefix = "[FG]"
 
-            if '[BG]' not in obj.name and '[FG]' not in obj.name and obj.data is not None:
-                make_nodisp = properties.operator("object.convert_selected", text="Make invisible (NODISP)")
-                make_nodisp.prefix = "[NODISP]"
-                make_nocoli = properties.operator("object.convert_selected", text="Make non-collidable (NOCOLI)")
-                make_nocoli.prefix = "[NOCOLI]"
-                make_mirror = properties.operator("object.convert_selected", text="Make runtime reflective")
-                make_mirror.prefix = "[MIR]"
-                convert_level_model = properties.operator("object.convert_selected", text="Add Custom Model Properties")
-                convert_level_model.prefix = "[MODEL]"
+                if '[BG]' not in obj.name and '[FG]' not in obj.name and obj.data is not None:
+                    make_nodisp = properties.operator("object.convert_selected", text="Make invisible (NODISP)")
+                    make_nodisp.prefix = "[NODISP]"
+                    make_nocoli = properties.operator("object.convert_selected", text="Make non-collidable (NOCOLI)")
+                    make_nocoli.prefix = "[NOCOLI]"
+                    make_mirror = properties.operator("object.convert_selected", text="Make runtime reflective")
+                    make_mirror.prefix = "[MIR]"
+                    convert_level_model = properties.operator("object.convert_selected", text="Add Custom Model Properties")
+                    convert_level_model.prefix = "[MODEL]"
+
+                if '[START]' in obj.name:
+                    make_cpu_starts = properties.operator("object.generate_cpu_starts", text="Make CPU Starts from Selected")
 
             if '[PATH]' in obj.name:
                 make_cpu_paths = properties.operator("object.generate_cpu_paths", text="Make CPU Paths from Selected")
@@ -392,6 +400,7 @@ class OBJECT_OT_generate_track_path(bpy.types.Operator):
     bl_idname = "object.generate_track_path"
     bl_label = "Generate Track Path from Selected"
     bl_descriptions = "Generates a track path from the selected faces."
+    bl_options={'UNDO'} 
 
     def execute(self, context):
         obj = bpy.context.active_object
@@ -423,7 +432,6 @@ class OBJECT_OT_generate_track_path(bpy.types.Operator):
         # Subdivide the path
         subdivided_path = []
         for i in range(0, len(median_points)-1):
-            print("added first pt for " + str(i))
             subdivided_path.append(median_points[i])
 
             if subdivision_count is not 1:
@@ -431,13 +439,10 @@ class OBJECT_OT_generate_track_path(bpy.types.Operator):
                     lerp_factor = segment/subdivision_count
                     new_point = median_points[i].lerp(median_points[i+1], lerp_factor)
                     subdivided_path.append(new_point)
-                    print("added pt w lerp factor " + str(lerp_factor))
 
-        print("added last pt")
         subdivided_path.append(median_points[-1])
 
         # Fill in the remainder of the points by randomly distributing them (definitely not the best way)
-        pdb.set_trace()
         while len(subdivided_path) < 101:
             target_index = random.randint(0, len(subdivided_path)-2)
             target_index_vert = subdivided_path[target_index]
@@ -458,6 +463,7 @@ class OBJECT_OT_generate_track_path(bpy.types.Operator):
         path_curve = bpy.data.objects.new('[PATH] Race Track Path', path_curve_data)
         descriptor_track_path.DescriptorTrackPath.construct(path_curve)
         context.collection.objects.link(path_curve)
+        path_curve.location = obj.location
 
         return {'FINISHED'}
 
@@ -466,6 +472,7 @@ class OBJECT_OT_generate_cpu_paths(bpy.types.Operator):
     bl_idname = "object.generate_cpu_paths"
     bl_label = "Generate CPU Paths"
     bl_descriptions = "Generates 7 CPU paths for the selected track path."
+    bl_options={'UNDO'} 
 
     def execute(self, context):
         path = bpy.context.active_object
@@ -473,6 +480,7 @@ class OBJECT_OT_generate_cpu_paths(bpy.types.Operator):
         while copies < 7:
             path_dupe = path.copy()
             path_dupe.data = path.data.copy()
+            path_dupe["playerID"] = copies+2
 
             # CPU paths are 0.5 above player paths
             path_dupe.location[2] = path_dupe.location[2] + 0.5
@@ -482,11 +490,34 @@ class OBJECT_OT_generate_cpu_paths(bpy.types.Operator):
 
         return {'FINISHED'}
 
+# Opeartor for generatin an arrangement of 7 CPU player starts
+class OBJECT_OT_generate_cpu_starts(bpy.types.Operator):
+    bl_idname = "object.generate_cpu_starts"
+    bl_label = "Generate CPU Starts"
+    bl_descriptions = "Generates 7 CPU starting positions for the selected starting position."
+    bl_options={'UNDO'} 
+
+    def execute(self, context):
+        start = bpy.context.active_object
+        copies = 0
+        while copies < 7:
+            start_dupe = start.copy()
+            start_dupe["playerID"] = copies+2
+
+            new_pos = (copies+1)*math.cos(start.rotation_euler.z)*Vector((-1, 1, 0)) + (copies+1)*math.sin(start.rotation_euler.z)*Vector((-1, -1, 0))
+            start_dupe.location = start_dupe.location + new_pos 
+
+            context.collection.objects.link(start_dupe)
+            copies = copies+1
+
+        return {'FINISHED'}
+
 # Operator for setting backface culling on all materials of all objects
 class OBJECT_OT_set_backface_culling(bpy.types.Operator):
     bl_idname = "object.set_backface_culling"
     bl_label = "Set Backface Culling"
     bl_description = "Sets the backface culling attribute on all materials"
+    bl_options={'UNDO'} 
 
     def execute(self, context):
         for mat in bpy.data.materials:
@@ -500,6 +531,7 @@ class OBJECT_OT_export_obj(bpy.types.Operator):
     bl_idname = "object.export_obj"
     bl_label = "Export OBJ"
     bl_description = "Clean up model and export OBJ to the selected path"
+    bl_options={'UNDO'} 
 
     def execute(self, context):
         origin_frame = context.scene.frame_start
@@ -612,11 +644,21 @@ class OBJECT_OT_export_obj(bpy.types.Operator):
                 obj.scale = (1, 1, 1)
 
         print("Exporting OBJ...")
+
+        # Dumb hacky way to not export path curves since they screw everything up
+        bpy.ops.object.select_all(action='DESELECT')
+        for obj in bpy.data.objects:
+            if '[PATH]' not in obj.name:
+                obj.select_set(True)
+
         bpy.ops.export_scene.obj(
                 filepath = bpy.path.abspath(context.scene.export_model_path),
                 use_triangles=True,
+                use_selection=True,
                 path_mode="RELATIVE",
             )
+
+        bpy.ops.object.select_all(action='DESELECT')
 
         # Restore original position and animation
         for obj in bg_fg_models:
@@ -681,6 +723,8 @@ class OBJECT_OT_export_gmatpl(bpy.types.Operator):
     bl_idname = "object.export_gmatpl"
     bl_label = "Export OBJ"
     bl_description = "Export an OBJ, then call GxModelViewer to export a GMA/TPL to the specified path"
+    bl_options={'UNDO'} 
+
     def execute(self, context):
         bpy.ops.object.export_obj("INVOKE_DEFAULT")
         obj_path = bpy.path.abspath(context.scene.export_model_path)
@@ -701,9 +745,11 @@ class OBJECT_OT_export_stagedef(bpy.types.Operator):
     bl_idname = "object.export_stagedef"
     bl_label = "Export OBJ"
     bl_description = "Export an OBJ, then call Workshop 2 to export a LZ/LZ.RAW to the specified path."
+    bl_options={'UNDO'} 
 
     compressed: bpy.props.BoolProperty(default=True)
     def execute(self, context):
+        bpy.ops.object.export_obj("INVOKE_DEFAULT")
         bpy.ops.object.generate_config("INVOKE_DEFAULT")
         config_path = bpy.path.abspath(context.scene.export_config_path)
         stagedef_path = bpy.path.abspath(context.scene.export_stagedef_path)
@@ -731,6 +777,7 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
     bl_idname = "object.generate_config"
     bl_label = "Generate Config"
     bl_description = "Generate .XML file for config export"
+    bl_options={'UNDO'} 
 
     def execute(self, context):
         print("Generating config...")
