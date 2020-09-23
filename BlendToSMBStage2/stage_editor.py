@@ -399,6 +399,24 @@ def autoPathNames(self, context):
         context.scene.export_raw_stagedef_path = default_filename + ".lz.raw"
         context.scene.export_stagedef_path = default_filename + ".lz"
 
+# Function for syncing properties and UI properties of objects on load
+def autoUpdateUIProps():
+    for obj in bpy.data.objects:
+        propertyGroup = []
+        for desc in descriptors.descriptors:
+            if desc.get_object_name() in obj.name: 
+                propertyGroup.append(desc.return_properties(obj))
+                if "[MODEL]" not in obj.name: break
+
+        for group in [group for group in propertyGroup if group is not None]:
+            for ui_prop in group.__annotations__.keys():
+                if (ui_prop in obj.keys()):
+                    val = type(getattr(group, ui_prop))(obj[ui_prop])
+                    setattr(group, ui_prop, val)
+                else:
+                    print("Property " + ui_prop + " not found in " + obj.name)
+
+
 # Operator for generating a track path from selected faces
 class OBJECT_OT_generate_track_path(bpy.types.Operator):
     bl_idname = "object.generate_track_path"
@@ -1019,7 +1037,7 @@ class AltModelProperties(bpy.types.PropertyGroup):
                               update=lambda s,c: update_prop(s, c, "meshType"))
     texScrollUSpeed:   FloatProperty(name="Horizontal Tex. Scroll Speed",
                               update=lambda s,c: update_prop(s, c, "texScrollUSpeed"))
-    texScrollVSpeedol:   FloatProperty(name="Vertical Tex. Scroll Speed",
+    texScrollVSpeed:   FloatProperty(name="Vertical Tex. Scroll Speed",
                               update=lambda s,c: update_prop(s, c, "texScrollVSpeed"))
 # Properties for stage models
 class StageModelProperties(bpy.types.PropertyGroup):

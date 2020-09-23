@@ -175,6 +175,9 @@ def load_handler(dummy):
                 links.new(principled_node.inputs['Base Color'], image_texture_node.outputs['Color'])
                 principled_node.inputs['Specular'].default_value = 0.0
 
+    # Sync all UI properties
+    stage_editor.autoUpdateUIProps()
+
 # Register
 def register():
     try:
