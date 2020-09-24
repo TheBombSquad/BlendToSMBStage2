@@ -336,6 +336,7 @@ class VIEW3D_PT_5_settings(bpy.types.Panel):
         layout = self.layout
         layout.prop(context.scene, "falloutProp")
         layout.operator("view3d.draw_stage_objects")
+        layout.operator("object.generate_texture_scroll_preview")
         layout.prop(context.scene, "fog_type")
         layout.prop(context.scene, "fog_start_distance")
         layout.prop(context.scene, "fog_end_distance")
@@ -401,6 +402,8 @@ def autoPathNames(self, context):
 
 # Function for syncing properties and UI properties of objects on load
 def autoUpdateUIProps():
+    bpy.context.view_layer.objects.active = None 
+
     for obj in bpy.data.objects:
         propertyGroup = []
         for desc in descriptors.descriptors:
@@ -416,12 +419,51 @@ def autoUpdateUIProps():
                 else:
                     print("Property " + ui_prop + " not found in " + obj.name)
 
+# Operator for auto-generating keyframes for a UV warp modifier to preview texture scroll
+class OBJECT_OT_generate_texture_scroll_preview(bpy.types.Operator):
+    bl_idname = "object.generate_texture_scroll_preview"
+    bl_label = "Genreate Texture Scroll Preview"
+    bl_description = "Generates keyframes for previewing texture scroll"
+    bl_options = {'UNDO'}
+
+    def execute(self, context):
+        for obj in context.scene.objects:
+            if obj.get("texScrollUSpeed", 0.0) or obj.get("texScrollVSpeed", 0.0):
+                if 'texScrollModifier' not in obj.modifiers.keys():
+                    modifier = obj.modifiers.new('texScrollModifier', 'UV_WARP')
+                else:
+                    modifier = obj.modifiers['texScrollModifier']
+                    
+                offset = modifier.offset
+                frame_start = context.scene.frame_start
+                frame_end = context.scene.frame_end
+                u_end = (obj["texScrollUSpeed"] / 60) * frame_end
+                v_end = (obj["texScrollVSpeed"] / 60) * frame_end
+
+                offset[0] = 0.0
+                offset[1] = 0.0
+                offset.data.keyframe_insert('offset', frame=frame_start)
+
+                offset[0] = u_end
+                offset[1] = v_end
+                offset.data.keyframe_insert('offset', frame=frame_end)
+                
+                for fcurve in obj.animation_data.action.fcurves:
+                    if 'texScrollModifier' in fcurve.data_path:
+                        for keyframe in fcurve.keyframe_points:
+                            keyframe.interpolation = 'LINEAR'
+
+            else:
+                if 'texScrollModifier' in obj.modifiers.keys():
+                    obj.modifiers.remove(obj.modifiers['texScrollModifier'])
+
+        return {'FINISHED'}
 
 # Operator for generating a track path from selected faces
 class OBJECT_OT_generate_track_path(bpy.types.Operator):
     bl_idname = "object.generate_track_path"
     bl_label = "Generate Track Path from Selected"
-    bl_descriptions = "Generates a track path from the selected faces."
+    bl_description = "Generates a track path from the selected faces"
     bl_options={'UNDO'} 
 
     def execute(self, context):
@@ -456,7 +498,7 @@ class OBJECT_OT_generate_track_path(bpy.types.Operator):
         for i in range(0, len(median_points)-1):
             subdivided_path.append(median_points[i])
 
-            if subdivision_count is not 1:
+            if subdivision_count != 1:
                 for segment in range(1, subdivision_count):
                     lerp_factor = segment/subdivision_count
                     new_point = median_points[i].lerp(median_points[i+1], lerp_factor)
@@ -493,7 +535,7 @@ class OBJECT_OT_generate_track_path(bpy.types.Operator):
 class OBJECT_OT_generate_cpu_paths(bpy.types.Operator):
     bl_idname = "object.generate_cpu_paths"
     bl_label = "Generate CPU Paths"
-    bl_descriptions = "Generates 7 CPU paths for the selected track path."
+    bl_description = "Generates 7 CPU paths for the selected track path"
     bl_options={'UNDO'} 
 
     def execute(self, context):
@@ -516,7 +558,7 @@ class OBJECT_OT_generate_cpu_paths(bpy.types.Operator):
 class OBJECT_OT_generate_cpu_starts(bpy.types.Operator):
     bl_idname = "object.generate_cpu_starts"
     bl_label = "Generate CPU Starts"
-    bl_descriptions = "Generates 7 CPU starting positions for the selected starting position."
+    bl_description = "Generates 7 CPU starting positions for the selected starting position"
     bl_options={'UNDO'} 
 
     def execute(self, context):
@@ -769,7 +811,7 @@ class OBJECT_OT_export_gmatpl(bpy.types.Operator):
 class OBJECT_OT_export_stagedef(bpy.types.Operator):
     bl_idname = "object.export_stagedef"
     bl_label = "Export OBJ"
-    bl_description = "Export an OBJ, then call Workshop 2 to export a LZ/LZ.RAW to the specified path."
+    bl_description = "Export an OBJ, then call Workshop 2 to export a LZ/LZ.RAW to the specified path"
     bl_options={'UNDO'} 
 
     compressed: bpy.props.BoolProperty(default=True)
