@@ -1016,6 +1016,20 @@ def update_prop(self, context, prop):
 
         context.active_object[prop] = prop_value
 
+# Function for getting a list of collision triangle types depending on the game mode
+def get_collision_triangle_list(self, context):
+    game_mode = context.scene.stage_game_mode
+    items = [('0', 'Normal', '')]
+
+    if game_mode == 'MONKEY_GOLF_2':
+        items.append(('2', 'Green', ''))
+        items.append(('4', 'Rough', ''))
+        items.append(('8', 'Bunker', ''))
+
+    #TODO: Figure out flags (if any) Monkey Target and other games use
+
+    return items
+    
 # Properties for item groups
 class ItemGroupProperties(bpy.types.PropertyGroup):
     collisionStartX: FloatProperty(name="Collision Grid Start X",
@@ -1068,8 +1082,9 @@ class ItemGroupProperties(bpy.types.PropertyGroup):
                               default=-1.0)
     exportTimestep: IntProperty(name="Export Timestep",
                               update=lambda s,c: update_prop(s, c, "exportTimestep"))
-    collisionTriangleFlag: IntProperty(name="Collision Triangle Flag",
-                              update=lambda s,c: update_prop(s, c, "collisionTriangleFlag"))
+    collisionTriangleFlag: EnumProperty(name="Collision Triangle Flag",
+                              update=lambda s,c: update_prop(s, c, "collisionTriangleFlag"),
+                              items=lambda s,c: get_collision_triangle_list(s, c))
 
 # Properties for non-stage models (background, foreground objects)
 class AltModelProperties(bpy.types.PropertyGroup):

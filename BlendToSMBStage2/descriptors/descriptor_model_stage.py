@@ -37,6 +37,12 @@ class DescriptorModel(DescriptorBase):
         if not "[NOCOLI]" in obj.name:
             modelCollision = etree.SubElement(model, "collision")
             modelMeshCol = etree.SubElement(modelCollision, "meshCollision")
+            if obj.parent:
+                flag = obj.parent.get("collisionTriangleFlag", 0)
+            else:
+                flag = obj.get("collisionTriangleFlag", 0)
+            modelMeshColFlag = etree.SubElement(modelMeshCol, "collisionFlag")
+            modelMeshColFlag.text = str(flag) 
             modelMeshName = etree.SubElement(modelMeshCol, "name")
             modelMeshName.text = name
 
