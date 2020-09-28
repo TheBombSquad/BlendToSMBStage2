@@ -246,6 +246,12 @@ def register():
             subtype='FILE_PATH',
             default="//stagedef.lz"
     )
+    bpy.types.Scene.export_background_path = bpy.props.StringProperty(
+            name="Background Export Path",
+            description="The path to export the background config to",
+            subtype='FILE_PATH',
+            default="//background.bg.xml"
+    )
     bpy.types.Scene.falloutProp = bpy.props.IntProperty(
             name="Fallout Plane",
             description="Height of the fallout plane",
@@ -311,6 +317,21 @@ def register():
             description="Fog color",
             subtype='COLOR')
 
+    bpy.types.Scene.background_import_path = bpy.props.StringProperty(
+            name="BG Import Path",
+            description="The path to a .XML background file to import",
+            subtype='FILE_PATH',
+            default=""
+    )
+    bpy.types.Scene.background_import_preview = bpy.props.BoolProperty(
+            name="Import Background Previews",
+            default=False
+    )
+    bpy.types.Scene.background_import_use_cubes = bpy.props.BoolProperty(
+            name="Use Cube Empty Approximations",
+            default=False
+    )
+
     # Special properties for Monkey Ball objects (also for fancy UI property display)
     bpy.types.Object.item_group_properties = bpy.props.PointerProperty(
             type=stage_editor.ItemGroupProperties)
@@ -347,6 +368,7 @@ def unregister():
     del bpy.types.Scene.export_tpl_path
     del bpy.types.Scene.export_raw_stagedef_path
     del bpy.types.Scene.export_stagedef_path
+    del bpy.types.Scene.export_background_path
     del bpy.types.Scene.draw_falloutProp
     del bpy.types.Scene.draw_stage_objects
     del bpy.types.Scene.draw_collision_grid
@@ -356,6 +378,9 @@ def unregister():
     del bpy.types.Scene.stage_game_mode
     del bpy.types.Object.item_group_properties 
     del bpy.types.Object.alt_model_properties 
+    del bpy.types.Scene.background_import_path
+    del bpy.types.Scene.background_import_preview
+    del bpy.types.Scene.background_import_use_cubes
 
     del bpy.types.Object.stage_model_properties 
     del bpy.types.Object.goal_properties 

@@ -10,7 +10,7 @@ import mathutils
 import random
 import math
 
-from . import statics, stage_object_drawing, generate_config
+from . import statics, stage_object_drawing, generate_config, dimension_dict
 from .descriptors import descriptors, descriptor_item_group, descriptor_model_stage, descriptor_track_path
 from bpy.props import BoolProperty, PointerProperty, EnumProperty, FloatProperty, IntProperty
 from enum import Enum
@@ -168,6 +168,7 @@ class VIEW3D_PT_2_stage_object_panel(bpy.types.Panel):
         game_mode = context.scene.stage_game_mode
 
         layout = self.layout
+        layout.label(text="Add Placeables")
         new_start = layout.operator("object.create_new_empty_and_select", text="Starting Position")
         new_start.name = "[START]"
 
@@ -204,7 +205,6 @@ class VIEW3D_PT_2_stage_object_panel(bpy.types.Panel):
         new_fallout_volume = layout.operator("object.create_new_empty_and_select", text="Fallout Volume")
         new_fallout_volume.name = "[FALLOUT_VOL] Fallout Volume"
 
-        external_objects = layout.operator("object.add_external_objects", text="External Objects")
 
         layout.label(text="Add Switches")
         switch_row = layout.row(align=True)
@@ -232,6 +232,13 @@ class VIEW3D_PT_2_stage_object_panel(bpy.types.Panel):
 
             new_golf_hole = layout.operator("object.create_new_empty_and_select", text="Golf Hole")
             new_golf_hole.name = "[GOLF_HOLE] Golf Hole"
+
+        layout.label(text="Add External")
+        external_objects = layout.operator("object.add_external_objects", text="External Objects")
+        bg_import = layout.operator("object.import_background", text="External Background")
+        bg_path = layout.prop(context.scene, "background_import_path")
+        bg_preview = layout.prop(context.scene, "background_import_preview")
+        bg_cube = layout.prop(context.scene, "background_import_use_cubes")
 
 # UI panel for active object modification
 class VIEW3D_PT_3_active_object_panel(bpy.types.Panel):
@@ -305,17 +312,20 @@ class VIEW3D_PT_4_export_panel(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-        layout.prop(context.scene, "stage_game_mode")
+        layout.label(text="Export Settings")
         layout.prop(context.scene, "export_timestep")
         layout.prop(context.scene, "export_value_round")
         layout.prop(context.scene, "export_time_round")
+        layout.label(text="Export Paths")
         layout.prop(context.scene, "export_config_path")
         layout.prop(context.scene, "export_model_path")
         layout.prop(context.scene, "export_gma_path")
         layout.prop(context.scene, "export_tpl_path")
         layout.prop(context.scene, "export_raw_stagedef_path")
         layout.prop(context.scene, "export_stagedef_path")
+        layout.prop(context.scene, "export_background_path")
         layout.prop(context.scene, "auto_path_names")
+        layout.label(text="Export Operators")
         layout.operator("object.generate_config", text="Generate Config")
         layout.operator("object.export_obj", text="Export OBJ")
         layout.operator("object.export_gmatpl", text="Export GMA/TPL")
@@ -323,6 +333,7 @@ class VIEW3D_PT_4_export_panel(bpy.types.Panel):
         export_lz_raw.compressed = False;
         export_lz = layout.operator("object.export_stagedef", text="Export LZ")
         export_lz.compressed = True;
+        export_bg = layout.operator("object.export_background", text="Export Background")
 
 # UI panel for global scene/stage settings
 class VIEW3D_PT_5_settings(bpy.types.Panel):
@@ -334,17 +345,21 @@ class VIEW3D_PT_5_settings(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
+        layout.label(text="Stage Properties")
+        layout.prop(context.scene, "stage_game_mode")
         layout.prop(context.scene, "falloutProp")
-        layout.operator("view3d.draw_stage_objects")
-        layout.operator("object.generate_texture_scroll_preview")
         layout.prop(context.scene, "fog_type")
         layout.prop(context.scene, "fog_start_distance")
         layout.prop(context.scene, "fog_end_distance")
         layout.prop(context.scene, "fog_color")
+        layout.label(text="Editor Operators")
+        layout.operator("view3d.draw_stage_objects")
+        layout.operator("object.generate_texture_scroll_preview")
+        layout.operator("object.set_backface_culling")
+        layout.label(text="Editor Properties")
         layout.prop(context.scene, "draw_stage_objects")
         layout.prop(context.scene, "draw_falloutProp")
         layout.prop(context.scene, "draw_collision_grid")
-        layout.operator("object.set_backface_culling")
         layout.prop(context.scene, "optimize_keyframes")
 
 # Operator for toggling the drawing of stage objects
@@ -399,6 +414,7 @@ def autoPathNames(self, context):
         context.scene.export_tpl_path = default_filename + ".tpl"
         context.scene.export_raw_stagedef_path = default_filename + ".lz.raw"
         context.scene.export_stagedef_path = default_filename + ".lz"
+        context.scene.export_background_path = default_filename + ".bg.xml"
 
 # Function for syncing properties and UI properties of objects on load
 def autoUpdateUIProps():
@@ -839,6 +855,210 @@ class OBJECT_OT_export_stagedef(bpy.types.Operator):
 
         return {'FINISHED'}
 
+# Operator for importing a background from a .XML file
+class OBJECT_OT_import_background(bpy.types.Operator):
+    bl_idname ="object.import_background"
+    bl_label = "Import Background"
+    bl_description = "Import background from the specified .XML file."
+    bl_options={'UNDO'}
+    
+    def execute(self, context):
+        bg_path = bpy.path.abspath(context.scene.background_import_path)
+        if not (os.path.exists(bg_path)):
+            self.report({'ERROR'}, "Invalid background file path selected!")
+            return {'CANCELLED'}
+        
+        bg = etree.parse(bg_path)
+        bg_root = bg.getroot()
+
+        if bg_root.tag != 'superMonkeyBallBackground':
+            self.report({'ERROR'}, "Imported background XML not an exported background XML")
+            return {'CANCELLED'}
+
+        if context.scene.background_import_preview:
+            convert = lambda v, n: Vector((float(v[0]), (-1+int(2*(not n)))*float(v[2]), float(v[1])))
+            rad = lambda v: Vector((math.radians(v[0]), math.radians(v[1]), math.radians(v[2])))
+
+            for i, imported_bg_model in enumerate(bg_root.getchildren()):
+                preview_name = imported_bg_model.find('name').text
+                preview_pos = convert(imported_bg_model.find('position').attrib.values(), True)
+                preview_rot = rad(convert(imported_bg_model.find('rotation').attrib.values(), True))
+                preview_scale = convert(imported_bg_model.find('scale').attrib.values(), False)
+                preview_dimensions = Vector((1,1,1))
+
+                print("Importing model " + str(preview_name))
+
+                if (preview_name in dimension_dict.dimensions.keys()):
+                    preview_dimensions = convert(dimension_dict.dimensions[preview_name], False)
+
+                newEmpty = bpy.data.objects.new("[EXT_IMPORTED:{}:{}]".format(preview_name, i), None)
+                newEmpty.location = preview_pos
+                newEmpty.rotation_euler = preview_rot
+                if context.scene.background_import_use_cubes:
+                    newEmpty.empty_display_size = 0.5
+                    newEmpty.scale[0] = preview_scale[0] * preview_dimensions[0]
+                    newEmpty.scale[1] = preview_scale[1] * preview_dimensions[1]
+                    newEmpty.scale[2] = preview_scale[2] * preview_dimensions[2]
+                    newEmpty.empty_display_type = "CUBE"
+                else:
+                    newEmpty.empty_display_type = "ARROWS"
+                bpy.context.collection.objects.link(newEmpty)
+            
+                effects = imported_bg_model.find('effectKeyframes')
+                if effects is not None: 
+                    for effect in effects:
+                        if effect.tag == 'effectType1':
+                            for j, ef1 in enumerate(effect.getchildren()):
+                                effect_pos = convert([ef1.attrib['posX'], ef1.attrib['posY'], ef1.attrib['posZ']], True)
+                                effect_rot = rad(convert([ef1.attrib['rotX'], ef1.attrib['rotY'], ef1.attrib['rotZ']], True))
+
+                                newEmpty = bpy.data.objects.new("[EXT_IMPORTED_FX:{}:{}:{}]".format(preview_name, i, j), None)
+                                newEmpty.location = effect_pos
+                                newEmpty.rotation_euler = effect_rot
+                                newEmpty.empty_display_type = "ARROWS"
+                                bpy.context.collection.objects.link(newEmpty)
+
+                        elif effect.tag == 'effectType2':
+                            for j, ef2 in enumerate(effect.getchildren()):
+                                effect_pos = convert([ef2.attrib['posX'], ef2.attrib['posY'], ef2.attrib['posZ']], True)
+                                effect_rot = Vector((0,0,0))
+
+                                newEmpty = bpy.data.objects.new("[EXT_IMPORTED_FX:{}:{}:{}]".format(preview_name, i, j), None)
+                                newEmpty.location = effect_pos
+                                newEmpty.rotation_euler = effect_rot
+                                newEmpty.empty_display_type = "ARROWS"
+                                bpy.context.collection.objects.link(newEmpty)
+
+        return {'FINISHED'}
+
+# Operator for exporting a background to a .XML file
+class OBJECT_OT_export_background(bpy.types.Operator):
+    bl_idname ="object.export_background"
+    bl_label = "Export Background"
+    bl_description = "Export background to the specified .XML file."
+    bl_options={'UNDO'}
+    
+    def execute(self, context):
+        print("Generating background/foreground config...")
+        
+        root = etree.Element("superMonkeyBallBackground", version="1.3.0")
+
+        # Iterate over all top-level objects
+        for obj in [obj for obj in bpy.context.scene.objects if (obj.type == 'EMPTY' or obj.type == 'MESH' or obj.type == 'CURVE')]:
+            # Non-item groups (start, BG/FG objects, etc)
+            for desc in [descriptors.DescriptorBG, descriptors.DescriptorFG]: 
+                match_descriptor = False
+                if obj.name.startswith(desc.get_object_name()): 
+                    match_descriptor = True
+                    desc.generate_xml(root, obj)
+                    continue
+
+        # Import background and foreground objects from a .XML file, if it exists
+        obj_names = [obj.name for obj in context.scene.objects]
+        bg_path = bpy.path.abspath(context.scene.background_import_path)
+        if (os.path.exists(bg_path)):
+            bg = etree.parse(bg_path)
+            bg_root = bg.getroot()
+
+            if bg_root.tag != 'superMonkeyBallBackground':
+                self.report({'ERROR'}, "Imported background XML not an exported background XML")
+                return {'CANCELLED'}
+
+            append_imported_bg_objects(self, context, bg_root, root, obj_names)
+
+        print("Completed, saving...")
+        if platform == "linux" or platform == "linux2":
+            config = etree.tostring(root, pretty_print=True, encoding="unicode")
+        else:
+            config = etree.tostring(root, encoding="unicode")
+        config_file = open(bpy.path.abspath(context.scene.export_background_path), "w")
+        config_file.write(config)
+        config_file.close()
+        print("Finished generating config")
+
+        return {'FINISHED'}
+# Operator for appending all imported background objects in an XML to a config root
+def append_imported_bg_objects(self, context, bg_root, dest_root, obj_names):
+    convert = lambda v, n: Vector((float(v[0]), (-1+int(2*(not n)))*float(v[2]), float(v[1])))
+    deg = lambda v: Vector((math.degrees(v[0]), math.degrees(v[1]), math.degrees(v[2])))
+
+    for index, imported_bg_model in enumerate(bg_root.getchildren()):
+        name = imported_bg_model.find('name')
+        ported_name = "[EXT_IMPORTED:" + name.text + ":" + str(index) + "]" 
+        print("Exporting imported background object " + ported_name + "...")
+        if ported_name in obj_names:
+            bg_obj = context.scene.objects[ported_name]
+
+            orig_pos = convert(imported_bg_model.find('position').attrib.values(), True) 
+            orig_rot = convert(imported_bg_model.find('rotation').attrib.values(), True) 
+            orig_scale = convert(imported_bg_model.find('scale').attrib.values(), False) 
+
+            bg_pos = imported_bg_model.find('position').attrib
+            bg_pos['x'] = str(bg_obj.location[0])
+            bg_pos['y'] = str(bg_obj.location[2])
+            bg_pos['z'] = str(-1 * bg_obj.location[1])
+            
+            bg_rot = imported_bg_model.find('rotation').attrib
+            bg_rot['x'] = str(math.degrees(bg_obj.rotation_euler[0]))
+            bg_rot['y'] = str(math.degrees(bg_obj.rotation_euler[2]))
+            bg_rot['z'] = str(-1 * math.degrees(bg_obj.rotation_euler[1]))
+
+            bg_dimensions = Vector((1,1,1))
+            if name.text in dimension_dict.dimensions.keys():
+                bg_dimensions = dimension_dict.dimensions[name.text]
+
+            bg_scale = imported_bg_model.find('scale').attrib
+            bg_scale['x'] = str(bg_obj.scale[0] / bg_dimensions[0])
+            bg_scale['y'] = str(bg_obj.scale[2] / bg_dimensions[1])
+            bg_scale['z'] = str(bg_obj.scale[1] / bg_dimensions[2])
+            
+            posXDelta = bg_obj.location[0] - orig_pos[0] 
+            posYDelta = bg_obj.location[2] - orig_pos[2]
+            posZDelta = bg_obj.location[1] - orig_pos[1]
+            rotXDelta = math.degrees(bg_obj.rotation_euler[0]) - orig_rot[0] 
+            rotYDelta = math.degrees(bg_obj.rotation_euler[2]) - orig_rot[2]
+            rotZDelta = math.degrees(bg_obj.rotation_euler[1]) - orig_rot[1]
+            scaleXDelta = float(bg_scale['x']) / orig_scale[0] 
+            scaleYDelta = float(bg_scale['y']) / orig_scale[2]
+            scaleZDelta = float(bg_scale['z']) / orig_scale[1]
+
+            effects = imported_bg_model.find('effectKeyframes')
+            if effects is not None:
+                for effect in effects:
+                    if effect.tag == 'effectType1':
+                        for j, ef1 in enumerate(effect.getchildren()):
+                            ported_name = "[EXT_IMPORTED_FX:" + name.text + ":" + str(index) + ":" + str(j) + "]" 
+                            effect_obj = context.scene.objects[ported_name]
+                            attr = ef1.attrib
+                            attr['posX'] = str(effect_obj.location[0]) 
+                            attr['posY'] = str(effect_obj.location[2])
+                            attr['posZ'] = str(-1*effect_obj.location[1]) 
+                            attr['rotX'] = str(math.degrees(effect_obj.rotation_euler[0]))
+                            attr['rotY'] = str(math.degrees(effect_obj.rotation_euler[2]))
+                            attr['rotZ'] = str(math.degrees(-1*effect_obj.rotation_euler[1])) 
+
+                    elif effect.tag == 'effectType2':
+                        for j, ef2 in enumerate(effect.getchildren()):
+                            ported_name = "[EXT_IMPORTED_FX:" + name.text + ":" + str(index) + ":" + str(j) + "]" 
+                            effect_obj = context.scene.objects[ported_name]
+                            attr = ef2.attrib
+                            attr['posX'] = str(effect_obj.location[0]) 
+                            attr['posY'] = str(effect_obj.location[2])
+                            attr['posZ'] = str(-1*effect_obj.location[1]) 
+            anim = imported_bg_model.find('animKeyframes')
+            if anim is not None:
+                for tag in anim.getchildren():
+                    for tag_name, delta in [('posX', posXDelta), ('posY', posYDelta), ('posZ', posZDelta), ('rotX', rotXDelta), ('rotY', rotYDelta), ('rotZ', rotZDelta), ('scaleX', scaleXDelta), ('scaleY', scaleYDelta), ('scaleZ', scaleZDelta)]:
+                        if tag.tag == tag_name:
+                            for keyframe in tag.getchildren():
+                                if "scale" not in tag_name:
+                                    keyframe.attrib['value'] = str(float(keyframe.attrib['value']) + delta)
+                                else:
+                                    keyframe.attrib['value'] = str(float(keyframe.attrib['value']) * delta)
+                            break
+
+        dest_root.append(imported_bg_model)
+
 # Operator for exporting the stage config as a .XML file
 class OBJECT_OT_generate_config(bpy.types.Operator):
     bl_idname = "object.generate_config"
@@ -849,7 +1069,7 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
     def execute(self, context):
         print("Generating config...")
 
-        root = etree.Element("superMonkeyBallStage", version="1.2.0")
+        root = etree.Element("superMonkeyBallStage", version="1.3.0")
         
         # OBJ file path
         modelImport = etree.SubElement(root, "modelImport")
@@ -863,36 +1083,37 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
         etree.SubElement(root, "falloutPlane", y=str(context.scene.falloutProp))
 
         # Fog 
-        fog_type = context.scene.fog_type
-        fog_start = context.scene.fog_start_distance
-        fog_end = context.scene.fog_end_distance
-        fog_red = context.scene.fog_color.r
-        fog_green = context.scene.fog_color.g
-        fog_blue = context.scene.fog_color.b 
+        if context.scene.fog_type != 'GX_FOG_NONE':
+            fog_type = context.scene.fog_type
+            fog_start = context.scene.fog_start_distance
+            fog_end = context.scene.fog_end_distance
+            fog_red = context.scene.fog_color.r
+            fog_green = context.scene.fog_color.g
+            fog_blue = context.scene.fog_color.b 
 
-        fog = etree.SubElement(root, "fog")
-        fogType = etree.SubElement(fog, "type")
-        fogType.text = str(fog_type)
-        fogStart = etree.SubElement(fog, "start")
-        fogStart.text = str(fog_start)
-        fogEnd = etree.SubElement(fog, "end")
-        fogEnd.text = str(fog_end)
-        fogRed = etree.SubElement(fog, "red")
-        fogRed.text = str(fog_red)
-        fogGreen = etree.SubElement(fog, "green")
-        fogGreen.text = str(fog_green)
-        fogBlue = etree.SubElement(fog, "blue")
-        fogBlue.text = str(fog_blue)
-        
-        # Fog Animation (1 keyframe required to make it work
-        fogAnimation = etree.SubElement(root, "fogAnimationKeyframes")
-        for element_name, element_value in [("start", fog_start), ("end", fog_end), ("red", fog_red), ("green", fog_green), ("blue", fog_blue)]:
-            element = etree.SubElement(fogAnimation, element_name)
-            keyframe = etree.Element("keyframe")
-            keyframe.set("time", str(0.0))
-            keyframe.set("value", str(element_value))
-            keyframe.set("easing", "LINEAR")
-            element.append(keyframe)
+            fog = etree.SubElement(root, "fog")
+            fogType = etree.SubElement(fog, "type")
+            fogType.text = str(fog_type)
+            fogStart = etree.SubElement(fog, "start")
+            fogStart.text = str(fog_start)
+            fogEnd = etree.SubElement(fog, "end")
+            fogEnd.text = str(fog_end)
+            fogRed = etree.SubElement(fog, "red")
+            fogRed.text = str(fog_red)
+            fogGreen = etree.SubElement(fog, "green")
+            fogGreen.text = str(fog_green)
+            fogBlue = etree.SubElement(fog, "blue")
+            fogBlue.text = str(fog_blue)
+            
+            # Fog Animation (1 keyframe required to make it work
+            fogAnimation = etree.SubElement(root, "fogAnimationKeyframes")
+            for element_name, element_value in [("start", fog_start), ("end", fog_end), ("red", fog_red), ("green", fog_green), ("blue", fog_blue)]:
+                element = etree.SubElement(fogAnimation, element_name)
+                keyframe = etree.Element("keyframe")
+                keyframe.set("time", str(0.0))
+                keyframe.set("value", str(element_value))
+                keyframe.set("easing", "LINEAR")
+                element.append(keyframe)
 
         #TODO: This is kind-of a hack to work around stuff being funky with the first item group
         dummyIg = etree.SubElement(root, "itemGroup") 
@@ -986,6 +1207,19 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
 
 
         context.scene.frame_set(begin_frame)
+
+        # Import background and foreground objects from a .XML file, if it exists
+        bg_path = bpy.path.abspath(context.scene.background_import_path)
+        obj_names = [obj.name for obj in context.scene.objects]
+        if (os.path.exists(bg_path)):
+            bg = etree.parse(bg_path)
+            bg_root = bg.getroot()
+
+            if bg_root.tag != 'superMonkeyBallBackground':
+                self.report({'ERROR'}, "Imported background XML not an exported background XML")
+                return {'CANCELLED'}
+
+            append_imported_bg_objects(self, context, bg_root, root, obj_names)
 
         print("Completed, saving...")
         if platform == "linux" or platform == "linux2":
