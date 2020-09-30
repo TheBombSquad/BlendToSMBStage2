@@ -27,7 +27,7 @@ class DescriptorSwitch(DescriptorBase):
         # Switch linked ID
         group = etree.SubElement(sub, "animGroupId")
         if obj['linkedObject'] is not None:
-            if 'animId' in obj.keys():
+            if 'animId' in obj['linkedObject'].keys():
                 group.text = str(obj['linkedObject']['animId'])
             else:
                 raise Exception("Switch " + obj.name + " not linked to an item group")

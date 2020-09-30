@@ -130,6 +130,7 @@ class DescriptorIG(DescriptorBase):
         obj["texScrollVSpeed"] = 0.0
 
         obj["exportTimestep"] = -1
+        obj["collisionTriangleFlag"] = 0
 
     @staticmethod
     def return_properties(obj):

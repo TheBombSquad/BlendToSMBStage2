@@ -45,7 +45,7 @@ class DescriptorWH(DescriptorBase):
     # Assigns custom properties to the object
     @staticmethod
     def construct(obj):
-        obj["whId"] = random.randint(1, 100000001)
+        obj["whId"] = random.randint(1, 65535)
         obj["linkedId"] = 0
         obj["linkedObject"] = None
 

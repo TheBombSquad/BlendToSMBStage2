@@ -90,6 +90,9 @@ def load_handler(dummy):
                 obj["conveyorY"] = 0.0
             if "conveyorZ" not in obj.keys():
                 obj["conveyorZ"] = 0.0
+            if "collisionTriangleFlag" not in obj.keys():
+                obj["collisionTriangleFlag"] = 0
+
         # Goals
         if obj.name.startswith("[GOAL_"):
             if "_cast_shadow" in obj.keys():
@@ -106,9 +109,9 @@ def load_handler(dummy):
             if "_id" in obj.keys():
                 obj["whId"] = obj["_id"]
                 del obj["_id"]
-            if "linkedId" in obj.keys(): 
-                obj["_linkedId"] = obj["linkedId"]
-                del obj["linkedId"]
+            if "_linkedId" in obj.keys(): 
+                obj["linkedId"] = obj["_linkedId"]
+                del obj["_linkedId"]
             if "_linkedObject" in obj.keys():
                 obj["linkedObject"] = obj["_linkedObject"]
                 del obj["_linkedObject"]
@@ -252,6 +255,18 @@ def register():
             subtype='FILE_PATH',
             default="//background.bg.xml"
     )
+    bpy.types.Scene.import_gma_path = bpy.props.StringProperty(
+            name="External GMA Import Path",
+            description="The path to an external GMA to import",
+            subtype='FILE_PATH',
+            default=""
+    )
+    bpy.types.Scene.import_tpl_path = bpy.props.StringProperty(
+            name="External TPL Import Path",
+            description="The path to an external TPL to import",
+            subtype='FILE_PATH',
+            default=""
+    )
     bpy.types.Scene.falloutProp = bpy.props.IntProperty(
             name="Fallout Plane",
             description="Height of the fallout plane",
@@ -369,6 +384,8 @@ def unregister():
     del bpy.types.Scene.export_raw_stagedef_path
     del bpy.types.Scene.export_stagedef_path
     del bpy.types.Scene.export_background_path
+    del bpy.types.Scene.import_gma_path
+    del bpy.types.Scene.import_tpl_path
     del bpy.types.Scene.draw_falloutProp
     del bpy.types.Scene.draw_stage_objects
     del bpy.types.Scene.draw_collision_grid

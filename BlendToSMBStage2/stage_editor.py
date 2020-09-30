@@ -9,13 +9,14 @@ import sys
 import mathutils
 import random
 import math
+import pdb
 
 from . import statics, stage_object_drawing, generate_config, dimension_dict
 from .descriptors import descriptors, descriptor_item_group, descriptor_model_stage, descriptor_track_path
 from bpy.props import BoolProperty, PointerProperty, EnumProperty, FloatProperty, IntProperty
 from enum import Enum
 from sys import platform
-from mathutils import Vector
+from mathutils import Vector, Matrix
 
 if platform == "linux" or platform == "linux2":
     from lxml import etree
@@ -139,6 +140,7 @@ class OBJECT_OT_create_new_empty_and_select(bpy.types.Operator):
                 desc.construct(newEmpty)
 
         newEmpty.select_set(True)
+        updateUIProps(newEmpty)
         return {'FINISHED'}
 
 # UI panel for group creation 
@@ -239,6 +241,8 @@ class VIEW3D_PT_2_stage_object_panel(bpy.types.Panel):
         bg_path = layout.prop(context.scene, "background_import_path")
         bg_preview = layout.prop(context.scene, "background_import_preview")
         bg_cube = layout.prop(context.scene, "background_import_use_cubes")
+        gma_import = layout.prop(context.scene, "import_gma_path")
+        tpl_import = layout.prop(context.scene, "import_tpl_path")
 
 # UI panel for active object modification
 class VIEW3D_PT_3_active_object_panel(bpy.types.Panel):
@@ -394,7 +398,7 @@ def draw_callback_3d(self, context):
     bgl.glEnable(bgl.GL_DEPTH_TEST)
     if context.scene.draw_stage_objects:
         # Draw objects
-        for obj in bpy.data.objects:
+        for obj in context.scene.objects:
             if obj.visible_get():
                 for desc in descriptors.descriptors:
                     if desc.get_object_name() in obj.name:
@@ -420,18 +424,24 @@ def autoPathNames(self, context):
 def autoUpdateUIProps():
     bpy.context.view_layer.objects.active = None 
 
-    for obj in bpy.data.objects:
+    for obj in bpy.context.scene.objects:
+        updateUIProps(obj)
+
+def updateUIProps(obj):
         propertyGroup = []
+        # Append only one property group, unless the object has the '[MODEL]' tag
         for desc in descriptors.descriptors:
             if desc.get_object_name() in obj.name: 
                 propertyGroup.append(desc.return_properties(obj))
                 if "[MODEL]" not in obj.name: break
-
+        
         for group in [group for group in propertyGroup if group is not None]:
             for ui_prop in group.__annotations__.keys():
                 if (ui_prop in obj.keys()):
-                    val = type(getattr(group, ui_prop))(obj[ui_prop])
-                    setattr(group, ui_prop, val)
+                    if getattr(group, ui_prop) is not None:
+                        val = type(getattr(group, ui_prop))(obj[ui_prop])
+                        if getattr(group, ui_prop) != val:
+                            setattr(group, ui_prop, val)
                 else:
                     print("Property " + ui_prop + " not found in " + obj.name)
 
@@ -542,6 +552,9 @@ class OBJECT_OT_generate_track_path(bpy.types.Operator):
 
         path_curve = bpy.data.objects.new('[PATH] Race Track Path', path_curve_data)
         descriptor_track_path.DescriptorTrackPath.construct(path_curve)
+        updateUIProps(path_curve)
+        path_curve.data.transform(path_curve.matrix_world)
+        path_curve.matrix_world = Matrix()
         context.collection.objects.link(path_curve)
         path_curve.location = obj.location
 
@@ -730,7 +743,7 @@ class OBJECT_OT_export_obj(bpy.types.Operator):
 
         # Dumb hacky way to not export path curves since they screw everything up
         bpy.ops.object.select_all(action='DESELECT')
-        for obj in bpy.data.objects:
+        for obj in context.scene.objects:
             if '[PATH]' not in obj.name:
                 obj.select_set(True)
 
@@ -815,11 +828,24 @@ class OBJECT_OT_export_gmatpl(bpy.types.Operator):
         tpl_path = bpy.path.abspath(context.scene.export_tpl_path)
         gx_path = bpy.utils.script_path_user() + "/addons/BlendToSMBStage2/GxUtils/GxModelViewer.exe"
 
-        subprocess.run([gx_path, 
-                        "-importObjMtl", obj_path,
-                        "-removeUnusedTextures",
-                        "-exportGma", gma_path,
-                        "-exportTpl", tpl_path])
+        args = []
+        args.append(gx_path)
+        args.append("-importObjMtl")
+        args.append(obj_path)
+        args.append("-removeUnusedTextures")
+
+        import_gma_path = bpy.path.abspath(context.scene.import_gma_path) 
+        import_tpl_path = bpy.path.abspath(context.scene.import_tpl_path)
+        if os.path.exists(import_gma_path) and os.path.exists(import_tpl_path):
+            args.append("-mergeGmaTpl")
+            args.append(import_gma_path + "," + import_tpl_path)
+
+        args.append("-exportGma")
+        args.append(gma_path)
+        args.append("-exportTpl")
+        args.append(tpl_path)
+
+        subprocess.run(args)
         
         return {'FINISHED'}
 
@@ -1249,6 +1275,15 @@ def update_prop(self, context, prop):
             prop_value = int(prop_value)
 
         context.active_object[prop] = prop_value
+
+        # Handles linked IDs
+        if prop == "linkedObject":
+            if "[SW_" in context.active_object.name:
+                context.active_object["linkedId"] = prop_value["animId"] 
+            elif "[WH]" in context.active_object.name:
+                context.active_object["linkedId"] = prop_value["whId"] 
+
+        updateUIProps(context.active_object)
 
 # Function for getting a list of collision triangle types depending on the game mode
 def get_collision_triangle_list(self, context):
