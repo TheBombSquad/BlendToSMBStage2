@@ -339,6 +339,7 @@ def draw_wh(obj):
         bgl.glLineWidth(width)
         draw_batch(wh_frame, color, "LINE_STRIP")
         gpu.matrix.push()
+        gpu.matrix.multiply_matrix(Matrix.Rotation(math.radians(180), 4, 'Z'))
         gpu.matrix.multiply_matrix(Matrix.Translation(Vector((0,-0.75,1))))
         draw_arrow(ZERO_VEC, (0.0, 1.5, 0.0), color)
         gpu.matrix.pop()
