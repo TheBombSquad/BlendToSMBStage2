@@ -553,10 +553,9 @@ class OBJECT_OT_generate_track_path(bpy.types.Operator):
         path_curve = bpy.data.objects.new('[PATH] Race Track Path', path_curve_data)
         descriptor_track_path.DescriptorTrackPath.construct(path_curve)
         updateUIProps(path_curve)
-        path_curve.data.transform(path_curve.matrix_world)
-        path_curve.matrix_world = Matrix()
         context.collection.objects.link(path_curve)
-        path_curve.location = obj.location
+        path_curve.data.transform(obj.matrix_world)
+        path_curve.matrix_world = Matrix()
 
         return {'FINISHED'}
 
@@ -907,15 +906,15 @@ class OBJECT_OT_import_background(bpy.types.Operator):
 
             for i, imported_bg_model in enumerate(bg_root.getchildren()):
                 preview_name = imported_bg_model.find('name').text
-                preview_pos = convert(imported_bg_model.find('position').attrib.values(), True)
-                preview_rot = rad(convert(imported_bg_model.find('rotation').attrib.values(), True))
-                preview_scale = convert(imported_bg_model.find('scale').attrib.values(), False)
+                preview_pos = convert(list(imported_bg_model.find('position').attrib.values()), True)
+                preview_rot = rad(convert(list(imported_bg_model.find('rotation').attrib.values()), True))
+                preview_scale = convert(list(imported_bg_model.find('scale').attrib.values()), False)
                 preview_dimensions = Vector((1,1,1))
 
                 print("Importing model " + str(preview_name))
 
                 if (preview_name in dimension_dict.dimensions.keys()):
-                    preview_dimensions = convert(dimension_dict.dimensions[preview_name], False)
+                    preview_dimensions = convert(list(dimension_dict.dimensions[preview_name]), False)
 
                 newEmpty = bpy.data.objects.new("[EXT_IMPORTED:{}:{}]".format(preview_name, i), None)
                 newEmpty.location = preview_pos
@@ -1015,9 +1014,9 @@ def append_imported_bg_objects(self, context, bg_root, dest_root, obj_names):
         if ported_name in obj_names:
             bg_obj = context.scene.objects[ported_name]
 
-            orig_pos = convert(imported_bg_model.find('position').attrib.values(), True) 
-            orig_rot = convert(imported_bg_model.find('rotation').attrib.values(), True) 
-            orig_scale = convert(imported_bg_model.find('scale').attrib.values(), False) 
+            orig_pos = convert(list(imported_bg_model.find('position').attrib.values()), True) 
+            orig_rot = convert(list(imported_bg_model.find('rotation').attrib.values()), True) 
+            orig_scale = convert(list(imported_bg_model.find('scale').attrib.values()), False) 
 
             bg_pos = imported_bg_model.find('position').attrib
             bg_pos['x'] = str(bg_obj.location[0])
