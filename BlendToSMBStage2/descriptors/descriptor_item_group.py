@@ -20,6 +20,9 @@ class DescriptorIG(DescriptorBase):
 
     @staticmethod
     def generate_xml(parent_element, obj):
+        if "collisionStartX" not in obj.keys():
+            raise Exception("Object " + obj.name + " is not a real item group! Try converting it into an item group, or renaming it.")
+
         print("\tProcessing item group " + obj.name)
         xig = etree.SubElement(parent_element, "itemGroup")
 

@@ -392,6 +392,60 @@ class VIEW3D_OT_draw_stage_objects(bpy.types.Operator):
             self.report({"WARNING"}, "View3D not found, or stage visibility toggled off.")
             return {'CANCELLED'}
 
+# Panel for material modification
+class MATERIAL_PT_blend2smb_material(bpy.types.Panel):
+    bl_idname = "MATERIAL_PT_blend2smb_material"
+    bl_label = "Blend2SMB"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "material"
+    bl_options = {'DEFAULT_CLOSED'}
+
+    @classmethod
+    def poll(cls, context):
+        return (context.object.active_material is not None)
+
+    def draw(self, context):
+        layout = self.layout
+
+        layout.operator("material.mark_unshaded")
+
+# Operator for marking a material as unshaded
+class MATERIAL_OT_mark_unshaded(bpy.types.Operator):
+    bl_idname = "material.mark_unshaded"
+    bl_label = "Mark as Unshaded"
+    bl_description = "Whether or not visual representations of stage objects should be drawn"
+    bl_options = {'UNDO'}
+
+    def execute(self, context):
+        mat = context.material 
+        if (mat.use_nodes):
+            nodes = mat.node_tree.nodes
+            links = mat.node_tree.links
+
+            material_output_node = None
+            image_texture_node = None
+            principled_node = None
+
+            for node in nodes:
+                if (node.type == 'BSDF_PRINCIPLED'):
+                    principled_node = node
+                elif (node.type =='OUTPUT_MATERIAL'):
+                    material_output_node = node
+                elif (node.type == 'TEX_IMAGE'):
+                    image_texture_node = node
+
+            # Convert Principled BSDF to Emission
+            if principled_node is not None:
+                print("Converting material " + mat.name + " from principled BSDF to emission")
+                nodes.remove(principled_node)
+                emission_node = nodes.new("ShaderNodeEmission")
+                links.new(material_output_node.inputs['Surface'], emission_node.outputs['Emission'])
+                links.new(emission_node.inputs['Color'], image_texture_node.outputs['Color'])
+                mat.name = "[UNSHADED] " + mat.name
+
+        return {'FINISHED'}
+
 # Callback function for drawing stage objects
 def draw_callback_3d(self, context):
     bgl.glEnable(bgl.GL_BLEND)
@@ -746,6 +800,35 @@ class OBJECT_OT_export_obj(bpy.types.Operator):
             if '[PATH]' not in obj.name:
                 obj.select_set(True)
 
+        # Oh gosh, more hacky stuff... this lets the unshaded material preview work since only
+        # principled BSDF materials get exported by Blender's OBJ exporter
+        for mat in bpy.data.materials:
+            if (mat.use_nodes) and ("[UNSHADED]" in mat.name):
+                nodes = mat.node_tree.nodes
+                links = mat.node_tree.links
+
+                material_output_node = None
+                image_texture_node = None
+                emission_node = None
+
+                for node in nodes:
+                    if (node.type == 'BSDF_PRINCIPLED'):
+                        continue
+                    elif (node.type =='OUTPUT_MATERIAL'):
+                        material_output_node = node
+                    elif (node.type == 'TEX_IMAGE'):
+                        image_texture_node = node
+                    elif (node.type == 'EMISSION'):
+                        emission_node = node
+
+                # Convert emission to principled BSDF
+                if emission_node is not None:
+                    print("Converting material " + mat.name + " from emission to principled BSDF")
+                    nodes.remove(emission_node)
+                    principled_node = nodes.new("ShaderNodeBsdfPrincipled")
+                    links.new(material_output_node.inputs['Surface'], principled_node.outputs['BSDF'])
+                    links.new(principled_node.inputs['Base Color'], image_texture_node.outputs['Color'])
+
         bpy.ops.export_scene.obj(
                 filepath = bpy.path.abspath(context.scene.export_model_path),
                 use_triangles=True,
@@ -754,6 +837,32 @@ class OBJECT_OT_export_obj(bpy.types.Operator):
             )
 
         bpy.ops.object.select_all(action='DESELECT')
+
+        # Undoes the hacky thing
+        for mat in bpy.data.materials:
+            if (mat.use_nodes) and ('[UNSHADED]' in mat.name):
+                nodes = mat.node_tree.nodes
+                links = mat.node_tree.links
+
+                material_output_node = None
+                image_texture_node = None
+                principled_node = None
+
+                for node in nodes:
+                    if (node.type == 'BSDF_PRINCIPLED'):
+                        principled_node = node
+                    elif (node.type =='OUTPUT_MATERIAL'):
+                        material_output_node = node
+                    elif (node.type == 'TEX_IMAGE'):
+                        image_texture_node = node
+
+                # Convert Principled BSDF to Emission
+                if principled_node is not None:
+                    print("Converting material " + mat.name + " from principled BSDF to emission")
+                    nodes.remove(principled_node)
+                    emission_node = nodes.new("ShaderNodeEmission")
+                    links.new(material_output_node.inputs['Surface'], emission_node.outputs['Emission'])
+                    links.new(emission_node.inputs['Color'], image_texture_node.outputs['Color'])
 
         # Restore original position and animation
         for obj in bg_fg_models:
