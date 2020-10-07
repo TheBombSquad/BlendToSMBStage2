@@ -502,7 +502,7 @@ def updateUIProps(obj):
 # Operator for auto-generating keyframes for a UV warp modifier to preview texture scroll
 class OBJECT_OT_generate_texture_scroll_preview(bpy.types.Operator):
     bl_idname = "object.generate_texture_scroll_preview"
-    bl_label = "Genreate Texture Scroll Preview"
+    bl_label = "Generate Texture Scroll Preview"
     bl_description = "Generates keyframes for previewing texture scroll"
     bl_options = {'UNDO'}
 

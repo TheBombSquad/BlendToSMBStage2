@@ -10,8 +10,10 @@ The original version  of the plugin can be found [here.](https://gitlab.com/Craf
 
 The latest version of SMB Workshop 2 is highly recommended, and can be downloaded [here.](https://craftedcart.gitlab.io/ws2web/#/download)
 
+A guide ot the usage of this tool, along with documentation in regards to Monkey Ball modding as a whole, can be found [here.](https://docs.google.com/document/d/194QZxrimkjHEzSSMKbafs86PnmiYmFBZUnoaEnks4es/edit)
+
 ## Setup
-To download the plugin, click on the green 'Clone or download' button near the top of this page, and click 'Download ZIP'. You don't need to extract the files in the downloaded .zip file. Open Blender 2.80, and go to Edit-\>Preferences in the menu bar. Go to the 'Add-ons' tab, and select 'Install...'. Navigate to, and select the downloaded .zip file. Search for "BlendToSMBStage2" in the Add-ons list, and then tick the checkmark next to the addon. The add-on will then be installed. You can access the stage object functionality through the 'Blend2SMB' tab on the right of the 3D viewport. If you can't see it, click the grey `+` icon in the top right of the 3D viewport.
+To download the plugin, [click here to get the latest list of releases,](https://github.com/TheBombSquad/BlendToSMBStage2/releases), then download the latest .ZIP file. You don't need to extract the files in the downloaded .zip file. Open Blender 2.80, and go to Edit-\>Preferences in the menu bar. Go to the 'Add-ons' tab, and select 'Install...'. Navigate to, and select the downloaded .zip file. Search for "BlendToSMBStage2" in the Add-ons list, and then tick the checkmark next to the addon. The add-on will then be installed. You can access the stage object functionality through the 'Blend2SMB' tab on the right of the 3D viewport. If you can't see it, click the grey `+` icon in the top right of the 3D viewport.
 
 If you want to import an old Blend file from 2.79 or earlier, you will need to convert the file to Cycles in order to get materials to show up properly. You can use the plugin 'Material Utils Special' in 2.79 to achieve this. This is an add-on that can be installed in a default installation of 2.79. You can go to File-\>User Preferences and locate it in the Add-ons tab. If this process is not done, you'll need to re-assign textures to your stage.
 
