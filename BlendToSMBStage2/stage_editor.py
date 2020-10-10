@@ -1479,18 +1479,12 @@ class StageModelProperties(bpy.types.PropertyGroup):
                               update=lambda s,c: update_prop(s, c, "cast_shadow"))
     receive_shadow: BoolProperty(name="Receives Shadow",
                               update=lambda s,c: update_prop(s, c, "receive_shadow"))
-    unk3: BoolProperty(name="Unknown Flag 3",
+    unk3: BoolProperty(name="Reflects in Mirror",
                               update=lambda s,c: update_prop(s, c, "unk3"))
     transparencyA: BoolProperty(name="Transparency Type A",
                               update=lambda s,c: update_prop(s, c, "transparencyA"))
     transparencyB: BoolProperty(name="Transparency Type B",
                               update=lambda s,c: update_prop(s, c, "transparencyB"))
-    unk6: BoolProperty(name="Unknown Flag 6",
-                              update=lambda s,c: update_prop(s, c, "unk6"))
-    unk7: BoolProperty(name="Unknown Flag 7",
-                              update=lambda s,c: update_prop(s, c, "unk7"))
-    unk8: BoolProperty(name="Unknown Flag 8",
-                              update=lambda s,c: update_prop(s, c, "unk8"))
 
 # Properties for goals
 class GoalProperties(bpy.types.PropertyGroup):

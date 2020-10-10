@@ -57,9 +57,6 @@ class DescriptorModel(DescriptorBase):
             bitflag = bitflag + (obj["unk3"] << 2)
             bitflag = bitflag + (obj["transparencyA"] << 3)
             bitflag = bitflag + (obj["transparencyB"] << 4)
-            bitflag = bitflag + (obj["unk6"] << 5)
-            bitflag = bitflag + (obj["unk7"] << 6)
-            bitflag = bitflag + (obj["unk8"] << 7)
 
             bitflagE = etree.SubElement(model, "bitflag")
             bitflagE.text = str(bitflag) 
@@ -71,9 +68,6 @@ class DescriptorModel(DescriptorBase):
         obj["unk3"] = False
         obj["transparencyA"] = False
         obj["transparencyB"] = False
-        obj["unk6"] = False
-        obj["unk7"] = False
-        obj["unk8"] = False
 
     @staticmethod
     def return_properties(obj):
