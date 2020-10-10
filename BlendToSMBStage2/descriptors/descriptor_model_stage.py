@@ -50,16 +50,16 @@ class DescriptorModel(DescriptorBase):
             mm = etree.SubElement(model, "runtimeReflective")
             mm.text = "true"
 
-        if "[MODEL]" in obj.name and "_cast_shadow" in obj.keys():
+        if "[MODEL]" in obj.name and "cast_shadow" in obj.keys():
             bitflag = 0
-            bitflag = bitflag + (obj["_cast_shadow"] << 0)
-            bitflag = bitflag + (obj["_receive_shadow"] << 1)
-            bitflag = bitflag + (obj["_unk3"] << 2)
-            bitflag = bitflag + (obj["_transparencyA"] << 3)
-            bitflag = bitflag + (obj["_transparencyB"] << 4)
-            bitflag = bitflag + (obj["_unk6"] << 5)
-            bitflag = bitflag + (obj["_unk7"] << 6)
-            bitflag = bitflag + (obj["_unk8"] << 7)
+            bitflag = bitflag + (obj["cast_shadow"] << 0)
+            bitflag = bitflag + (obj["receive_shadow"] << 1)
+            bitflag = bitflag + (obj["unk3"] << 2)
+            bitflag = bitflag + (obj["transparencyA"] << 3)
+            bitflag = bitflag + (obj["transparencyB"] << 4)
+            bitflag = bitflag + (obj["unk6"] << 5)
+            bitflag = bitflag + (obj["unk7"] << 6)
+            bitflag = bitflag + (obj["unk8"] << 7)
 
             bitflagE = etree.SubElement(model, "bitflag")
             bitflagE.text = str(bitflag) 
