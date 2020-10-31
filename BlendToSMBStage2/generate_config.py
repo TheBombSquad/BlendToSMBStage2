@@ -50,7 +50,7 @@ def addKeyframes(parent, selector, fcurve):
         if active["exportTimestep"] != -1:
             timestep = bpy.context.view_layer.objects.active["exportTimestep"]
 
-    for i in range(startFrame, endFrame, timestep):
+    for i in range(startFrame, endFrame+1, timestep):
         bpy.context.scene.frame_set(i)
         seconds = round((i-startFrame)/bpy.context.scene.render.fps, bpy.context.scene.export_time_round)
         val = round(selector(bpy.context.view_layer.objects.active), bpy.context.scene.export_value_round)
