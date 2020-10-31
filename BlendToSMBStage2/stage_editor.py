@@ -1119,8 +1119,8 @@ def append_imported_bg_objects(self, context, bg_root, dest_root, obj_names):
     for index, imported_bg_model in enumerate(bg_root.getchildren()):
         name = imported_bg_model.find('name')
         ported_name = "[EXT_IMPORTED:" + name.text + ":" + str(index) + "]" 
-        print("Exporting imported background object " + ported_name + "...")
         if ported_name in obj_names:
+            print("Exporting imported background object " + ported_name + "...")
             bg_obj = context.scene.objects[ported_name]
 
             orig_pos = convert(list(imported_bg_model.find('position').attrib.values()), True) 
@@ -1191,7 +1191,7 @@ def append_imported_bg_objects(self, context, bg_root, dest_root, obj_names):
                                     keyframe.attrib['value'] = str(float(keyframe.attrib['value']) * delta)
                             break
 
-        dest_root.append(imported_bg_model)
+            dest_root.append(imported_bg_model)
 
 # Operator for exporting the stage config as a .XML file
 class OBJECT_OT_generate_config(bpy.types.Operator):
