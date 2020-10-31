@@ -629,7 +629,7 @@ class OBJECT_OT_generate_cpu_paths(bpy.types.Operator):
             path_dupe["playerID"] = copies+2
 
             # CPU paths are 0.5 above player paths
-            path_dupe.location[2] = path_dupe.location[2] + 0.5
+            path_dupe.data.transform(Matrix.Translation(Vector((0,0,0.5))))
 
             context.collection.objects.link(path_dupe)
             copies = copies+1
