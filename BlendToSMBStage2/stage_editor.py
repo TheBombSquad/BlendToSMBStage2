@@ -953,7 +953,12 @@ class OBJECT_OT_export_gmatpl(bpy.types.Operator):
         args.append("-exportTpl")
         args.append(tpl_path)
 
-        subprocess.run(args)
+        gx_result = subprocess.run(args, capture_output=True)
+        errors = [error for error in gx_result.stdout.decode().split('\r\n') if ("Import Warning" in error) or ("Error" in error)]
+        if len(errors) > 0:
+            self.report({'ERROR'}, "GxModelViewer warnings/errors occured: " + "\n".join(errors))
+        
+        print(gx_result.stdout.decode())
         
         return {'FINISHED'}
 
@@ -985,7 +990,12 @@ class OBJECT_OT_export_stagedef(bpy.types.Operator):
         else:
             command_args.append("-o" + raw_stagedef_path)
 
-        subprocess.run(command_args)
+        ws_result = subprocess.run(command_args, capture_output=True)
+        errors = [error for error in ws_result.stdout.decode().split('\n') if ("Critical" in error) or ("Error" in error) or ("Warning" in error)]
+        if len(errors) > 0:
+            self.report({'ERROR'}, "Workshop 2 warnings/errors occured: " + "\n".join(errors))
+
+        print(ws_result.stdout.decode())
 
         return {'FINISHED'}
 
