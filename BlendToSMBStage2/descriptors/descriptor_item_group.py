@@ -100,6 +100,8 @@ class DescriptorIG(DescriptorBase):
     def render(obj):
         draw_grid = bpy.context.scene.draw_collision_grid
         stage_object_drawing.draw_ig(obj, draw_grid) 
+        if obj.get("loopAnim") == 2:
+            stage_object_drawing.draw_seesaw_axis(obj)
 
     @staticmethod
     def construct(obj):

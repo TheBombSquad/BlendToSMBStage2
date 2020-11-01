@@ -425,3 +425,23 @@ def draw_golf_hole(obj):
         draw_cylinder(ZERO_VEC, ZERO_VEC, 1, 0, 12, color)
 
     gpu.matrix.pop()
+
+def draw_seesaw_axis(obj):
+    gpu.matrix.push()
+    gpu.matrix.multiply_matrix(obj.matrix_world)
+    gpu.matrix.scale((1/obj.scale.x, 1/obj.scale.y, 1/obj.scale.z)) # No scaling
+    
+    lineWidth = [(8, COLOR_BLACK), (4, COLOR_PURPLE)]
+
+    for width, color in lineWidth:
+        bgl.glLineWidth(width)
+
+        dim = obj.dimensions
+        scale = 1.25
+
+        points = [Vector((0.0, dim[1]*scale*0.5, 0.0)),
+                  Vector((0.0, dim[1]*scale*-0.5, 0.0))]
+
+        draw_batch(points, color, 'LINES')
+
+    gpu.matrix.pop()
