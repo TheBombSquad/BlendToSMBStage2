@@ -2,10 +2,12 @@ import math
 import mathutils
 import gpu
 import bgl
+import bpy
 import bmesh
+import pdb
 
 from gpu_extras.batch import batch_for_shader
-from mathutils import Matrix, Vector
+from mathutils import Matrix, Vector, Euler
 
 COLOR_BLACK = (0.0, 0.0, 0.0, 0.8)
 COLOR_BLUE = (0.13, 0.59, 0.95, 0.8)
@@ -360,17 +362,38 @@ def draw_ig(obj, draw_collision_grid):
     conveyorEndPos = (obj["conveyorX"]*40, obj["conveyorZ"]*-40, obj["conveyorY"]*40)
 
     # Draw collision grid
+    gpu.matrix.push()
+
     if obj.animation_data is not None and obj.animation_data.action is not None:
-        gpu.matrix.push()
-        gpu.matrix.multiply_matrix(obj.matrix_world)
-        gpu.matrix.scale((1/obj.scale.x, 1/obj.scale.y, 1/obj.scale.z)) # No scaling
+        action = obj.animation_data.action
+
+        start_frame = bpy.context.scene.frame_start
+        current_frame = bpy.context.scene.frame_current
+        pos_delta = Vector((0,0,0))
+        rot_mode = obj.rotation_mode
+        rot_delta = Euler((0,0,0), rot_mode)
+
+        for i in range(3):
+            if action.fcurves.find("location", index=i):
+                c = action.fcurves.find("location", index=i)
+                delta = c.evaluate(current_frame) - c.evaluate(start_frame)
+                pos_delta[i] = delta
+            if action.fcurves.find("rotation_euler", index=i):
+                c = action.fcurves.find("rotation_euler", index=i)
+                delta = c.evaluate(current_frame) - c.evaluate(start_frame)
+                rot_delta[i] = delta
+           
+        grid_mtx_rot = rot_delta.to_matrix().to_4x4()
+        grid_mtx_pos = Matrix.Translation(pos_delta)
+        grid_mtx = grid_mtx_pos @ grid_mtx_rot
+
+        gpu.matrix.multiply_matrix(grid_mtx)
 
     bgl.glLineWidth(2)
     if draw_collision_grid:
         draw_grid(startX, startY, stepX, stepY, stepCountX, stepCountY, 0, COLOR_GREEN_FAINT)
 
-    if obj.animation_data is not None and obj.animation_data.action is not None:
-        gpu.matrix.pop()
+    gpu.matrix.pop()
 
     # Draw conveyor arrow
     conveyorObjects = [child for child in obj.children if child.data is not None]
