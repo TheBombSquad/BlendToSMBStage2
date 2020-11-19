@@ -169,7 +169,8 @@ def draw_arrow(start_pos, end_pos, color):
 def draw_start(obj):
     gpu.matrix.push()
     gpu.matrix.multiply_matrix(obj.matrix_world)
-    gpu.matrix.scale((1 / obj.scale.x, 1 / obj.scale.y, 1 / obj.scale.z))  # No scaling
+    if 0 not in obj.scale:
+        gpu.matrix.scale((1 / obj.scale.x, 1 / obj.scale.y, 1 / obj.scale.z))  # No scaling
 
     bgl.glLineWidth(6)
     draw_sphere(ZERO_VEC, 0.5, COLOR_BLACK)
@@ -183,7 +184,8 @@ def draw_start(obj):
 def draw_goal(obj, goal_color):
     gpu.matrix.push()
     gpu.matrix.multiply_matrix(obj.matrix_world)
-    gpu.matrix.scale((1/obj.scale.x, 1/obj.scale.y, 1/obj.scale.z)) # No scaling
+    if 0 not in obj.scale:
+        gpu.matrix.scale((1/obj.scale.x, 1/obj.scale.y, 1/obj.scale.z)) # No scaling
 
     bgl.glLineWidth(6)
     # Goal ring
@@ -258,7 +260,8 @@ def draw_jamabar(obj):
 def draw_cone_col(obj):
     gpu.matrix.push()
     gpu.matrix.multiply_matrix(obj.matrix_world)
-    gpu.matrix.scale((1, obj.scale.x/obj.scale.y, 1)) # No Y scaling
+    if obj.scale.y != 0:
+        gpu.matrix.scale((1, obj.scale.x/obj.scale.y, 1)) # No Y scaling
 
     bgl.glLineWidth(6)
     draw_cylinder(ZERO_VEC, ZERO_VEC, 1, 1, 16, COLOR_BLACK, cone=True)
@@ -271,7 +274,8 @@ def draw_cone_col(obj):
 def draw_sphere_col(obj):
     gpu.matrix.push()
     gpu.matrix.multiply_matrix(obj.matrix_world)
-    gpu.matrix.scale((1, obj.scale.x/obj.scale.y, obj.scale.x/obj.scale.z)) # No Y/Z scaling
+    if 0 not in [obj.scale.z, obj.scale.y]:
+        gpu.matrix.scale((1, obj.scale.x/obj.scale.y, obj.scale.x/obj.scale.z)) # No Y/Z scaling
 
     bgl.glLineWidth(6)
     draw_sphere(ZERO_VEC, 1, COLOR_BLACK, detailed=True)
@@ -284,7 +288,8 @@ def draw_sphere_col(obj):
 def draw_cylinder_col(obj):
     gpu.matrix.push()
     gpu.matrix.multiply_matrix(obj.matrix_world)
-    gpu.matrix.scale((1, obj.scale.x/obj.scale.y, 1)) # No Y scaling
+    if obj.scale.y != 0:
+        gpu.matrix.scale((1, obj.scale.x/obj.scale.y, 1)) # No Y scaling
 
     bgl.glLineWidth(6)
     draw_cylinder((0,0,-0.5), ZERO_VEC, 1, 1, 16, COLOR_BLACK)
@@ -309,7 +314,8 @@ def draw_fallout_volume(obj):
 def draw_switch(obj):
     gpu.matrix.push()
     gpu.matrix.multiply_matrix(obj.matrix_world)
-    gpu.matrix.scale((1/obj.scale.x, 1/obj.scale.y, 1/obj.scale.z)) # No scaling
+    if 0 not in obj.scale:
+        gpu.matrix.scale((1/obj.scale.x, 1/obj.scale.y, 1/obj.scale.z)) # No scaling
 
     rotation_rad = (0,0,math.radians(22.5))
 
@@ -326,7 +332,8 @@ def draw_switch(obj):
 def draw_wh(obj):
     gpu.matrix.push()
     gpu.matrix.multiply_matrix(obj.matrix_world)
-    gpu.matrix.scale((1/obj.scale.x, 1/obj.scale.y, 1/obj.scale.z)) # No scaling
+    if 0 not in obj.scale:
+        gpu.matrix.scale((1/obj.scale.x, 1/obj.scale.y, 1/obj.scale.z)) # No scaling
 
     lineWidth = [(6, COLOR_BLACK), (2, COLOR_BLUE)]
 
@@ -402,7 +409,8 @@ def draw_ig(obj, draw_collision_grid):
     for conveyorObject in conveyorObjects:
         gpu.matrix.push()
         gpu.matrix.multiply_matrix(conveyorObject.matrix_world)
-        gpu.matrix.scale((1/conveyorObject.scale.x, 1/conveyorObject.scale.y, 1/conveyorObject.scale.z)) # No scaling
+        if 0 not in conveyorObject.scale:
+            gpu.matrix.scale((1/conveyorObject.scale.x, 1/conveyorObject.scale.y, 1/conveyorObject.scale.z)) # No scaling
         lineWidth = [(6, COLOR_BLACK), (2, COLOR_GREEN)]
         for (width, color) in lineWidth:
             coords = [ZERO_VEC, conveyorEndPos]
@@ -413,7 +421,8 @@ def draw_ig(obj, draw_collision_grid):
 def draw_generic_sphere(obj, radius, color):
     gpu.matrix.push()
     gpu.matrix.multiply_matrix(obj.matrix_world)
-    gpu.matrix.scale((1/obj.scale.x, 1/obj.scale.y, 1/obj.scale.z)) # No scaling
+    if 0 not in obj.scale:
+        gpu.matrix.scale((1/obj.scale.x, 1/obj.scale.y, 1/obj.scale.z)) # No scaling
 
     bgl.glLineWidth(6)
     draw_sphere(ZERO_VEC, radius, COLOR_BLACK)
@@ -425,7 +434,8 @@ def draw_generic_sphere(obj, radius, color):
 def draw_booster(obj):
     gpu.matrix.push()
     gpu.matrix.multiply_matrix(obj.matrix_world)
-    gpu.matrix.scale((1/obj.scale.x, 1/obj.scale.y, 1/obj.scale.z)) # No scaling
+    if 0 not in obj.scale:
+        gpu.matrix.scale((1/obj.scale.x, 1/obj.scale.y, 1/obj.scale.z)) # No scaling
 
     lineWidth = [(6, COLOR_BLACK), (2, COLOR_RED)]
 
@@ -439,7 +449,8 @@ def draw_booster(obj):
 def draw_golf_hole(obj):
     gpu.matrix.push()
     gpu.matrix.multiply_matrix(obj.matrix_world)
-    gpu.matrix.scale((1/obj.scale.x, 1/obj.scale.y, 1/obj.scale.z)) # No scaling
+    if 0 not in obj.scale:
+        gpu.matrix.scale((1/obj.scale.x, 1/obj.scale.y, 1/obj.scale.z)) # No scaling
 
     lineWidth = [(6, COLOR_BLACK), (2, COLOR_BLUE)]
 
@@ -452,7 +463,8 @@ def draw_golf_hole(obj):
 def draw_seesaw_axis(obj):
     gpu.matrix.push()
     gpu.matrix.multiply_matrix(obj.matrix_world)
-    gpu.matrix.scale((1/obj.scale.x, 1/obj.scale.y, 1/obj.scale.z)) # No scaling
+    if 0 not in obj.scale:
+        gpu.matrix.scale((1/obj.scale.x, 1/obj.scale.y, 1/obj.scale.z)) # No scaling
     
     lineWidth = [(8, COLOR_BLACK), (4, COLOR_PURPLE)]
 
