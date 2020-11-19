@@ -60,7 +60,7 @@ class DescriptorTrackPath(DescriptorBase):
                 keyframe = etree.Element("keyframe")
                 keyframe.set("time", str(float(i)))
                 keyframe.set("value", str(value))
-                keyframe.set("easing", "EASED")
+                keyframe.set("easing", "LINEAR")
                 keyframe.set("handleA", str(round(delta, 4))) 
                 keyframe.set("handleB", str(round(delta, 4))) 
                 axis.append(keyframe)
