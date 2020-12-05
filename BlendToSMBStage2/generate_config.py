@@ -3,15 +3,23 @@ import sys
 import math
 from sys import platform
 
+from mathutils import Vector
+
 if platform == "linux" or platform == "linux2":
     from lxml import etree
 else:
     import xml.etree.ElementTree as etree
 
 # Generate an object entry with any of the following: position, rotation, scale 
-def generate_generic_obj_element(obj, obj_type, parent, *, position=False, rotation=False, scale=False, name=True):
-    loc = obj.matrix_world.to_translation()
-    rot = obj.matrix_world.to_euler("XZY")
+def generate_generic_obj_element(obj, obj_type, parent, *, position=False, rotation=False, scale=False, name=True, static_bg=False):
+    if static_bg:
+        loc = Vector((0,0,0))
+        rot = Vector((0,0,0))
+        scale = Vector((1,1,1))
+    else:
+        loc = obj.matrix_world.to_translation()
+        rot = obj.matrix_world.to_euler("XZY")
+        scale = obj.scale
 
     print("\tObject of type: " + obj_type)
     sub = etree.SubElement(parent, obj_type)
@@ -27,7 +35,7 @@ def generate_generic_obj_element(obj, obj_type, parent, *, position=False, rotat
     if rotation:
         etree.SubElement(sub, "rotation", x=str(math.degrees(rot.x)), y=str(math.degrees(rot.z)), z=str(math.degrees(-rot.y)))
     if scale:
-        etree.SubElement(sub, "scale", x=str(obj.scale.x), y=str(obj.scale.z), z=str(obj.scale.y))
+        etree.SubElement(sub, "scale", x=str(scale.x), y=str(scale.z), z=str(scale.y))
 
     return sub
 

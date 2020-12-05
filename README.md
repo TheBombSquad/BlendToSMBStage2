@@ -10,7 +10,7 @@ The original version  of the plugin can be found [here.](https://gitlab.com/Craf
 
 The latest version of SMB Workshop 2 is highly recommended, and can be downloaded [here.](https://craftedcart.gitlab.io/ws2web/#/download)
 
-A guide ot the usage of this tool, along with documentation in regards to Monkey Ball modding as a whole, can be found [here.](https://docs.google.com/document/d/194QZxrimkjHEzSSMKbafs86PnmiYmFBZUnoaEnks4es/edit)
+A guide to the usage of this tool, along with documentation in regards to Monkey Ball modding as a whole, can be found [here.](https://docs.google.com/document/d/194QZxrimkjHEzSSMKbafs86PnmiYmFBZUnoaEnks4es/edit)
 
 ## Setup
 To download the plugin, [click here to get the latest list of releases,](https://github.com/TheBombSquad/BlendToSMBStage2/releases), then download the latest .ZIP file. You don't need to extract the files in the downloaded .zip file. Open Blender 2.80, and go to Edit-\>Preferences in the menu bar. Go to the 'Add-ons' tab, and select 'Install...'. Navigate to, and select the downloaded .zip file. Search for "BlendToSMBStage2" in the Add-ons list, and then tick the checkmark next to the addon. The add-on will then be installed. You can access the stage object functionality through the 'Blend2SMB' tab on the right of the 3D viewport. If you can't see it, click the grey `+` icon in the top right of the 3D viewport.

@@ -24,7 +24,7 @@ class DescriptorFG(DescriptorBase):
         if obj.animation_data is not None and obj.animation_data.action is not None:
             fg = generate_config.generate_generic_obj_element(obj, "foregroundModel", parent_element, position=True, rotation=True, scale=True, name=False)
         else:
-            fg = generate_config.generate_generic_obj_element(obj, "foregroundModel", parent_element, name=False)
+            fg = generate_config.generate_generic_obj_element(obj, "foregroundModel", parent_element, position=True, rotation=True, scale=True, name=False, static_bg=True)
 
         # Cleans up names
         if obj.data == None or obj.name == obj.data.name:
