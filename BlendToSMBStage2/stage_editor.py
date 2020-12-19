@@ -706,7 +706,7 @@ class OBJECT_OT_export_obj(bpy.types.Operator):
         # while also preserving animation data, please let me know. I'm dumb
         # (This is necessary since exporting as an OBJ will snap objects to their first keyframe position)
 
-        bg_fg_models = [obj for obj in bpy.context.scene.objects if obj.name.startswith("[BG]") or obj.name.startswith("[FG]")]
+        bg_fg_models = [obj for obj in bpy.context.scene.objects if (obj.name.startswith("[BG]") or obj.name.startswith("[FG]") and (obj.animation_data is not None and obj.animation_data.action is not None))]
 
         orig_matrix_dict = {}
         orig_pos_rot_scale = [{}, {}, {}]
@@ -1272,22 +1272,27 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
         # Start frame of animation
         begin_frame = context.scene.frame_start
 
-        # Marks objects that don't have keyframes on frame 0
+        # Marks objects that don't have keyframes on frame 0, so they can be removed later
         remove_beginframe_objs = []
 
         # Iterate over all top-level objects
         for obj in [obj for obj in bpy.context.scene.objects if (obj.type == 'EMPTY' or obj.type == 'MESH' or obj.type == 'CURVE')]:
-            if "[IG]" in obj.name: 
-                igs.append(obj)
+
+            # Add first keyframe to IGs, BGs, and FGs
+            # Also add IGs to the IG list
+            if any(needsframe in obj.name for needsframe in ["[IG]", "[BG]", "[FG]"]): 
+                if "[IG]" in obj.name: igs.append(obj)
                 context.scene.frame_set(begin_frame)
 
                 # Semi-hacky way to get the object's center of rotation to work properly
                 # B2SMB1 inadvertently fixed this by baking *all* keyframes
+                # This is fixed by adding an initial keyframe on every curve
+                # This also fixes weirdness with background and foreground objects
                 begin_keyframe_exists = False
                 if obj.animation_data is not None and obj.animation_data.action is not None:
                     fcurves = obj.animation_data.action.fcurves
                     for index in [0, 1, 2]:
-                        for curve_type in ["location", "rotation_euler"]:
+                        for curve_type in ["location", "rotation_euler", "scale"]:
                             fcurve = fcurves.find(curve_type, index=index)
                             if fcurve is not None:
                                 for keyframe_index in range(len(fcurve.keyframe_points)):
@@ -1297,13 +1302,22 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
                         else: continue
                         break
 
-                # Remove the beginning keyframe if it didn't exist prior to it being added
-                if not begin_keyframe_exists:
-                    remove_beginframe_objs.append(obj)
+                    # Remove the beginning keyframe if it didn't exist prior to it being added
+                    if not begin_keyframe_exists:
+                        remove_beginframe_objs.append(obj)
 
-                print("\tInserted frame zero keyframe for item group " + obj.name)
-                obj.keyframe_insert("location", frame=begin_frame, options={'INSERTKEY_NEEDED'})
-                obj.keyframe_insert("rotation_euler", frame=begin_frame, options={'INSERTKEY_NEEDED'})
+                    print("\tInserted frame zero keyframe for item group " + obj.name)
+                    obj.keyframe_insert("location", frame=begin_frame, options={'INSERTKEY_NEEDED'})
+                    obj.keyframe_insert("rotation_euler", frame=begin_frame, options={'INSERTKEY_NEEDED'})
+                    obj.keyframe_insert("scale", frame=begin_frame, options={'INSERTKEY_NEEDED'})
+                
+                if "[IG]" not in obj.name:
+                    for desc in descriptors.descriptors_root:
+                        match_descriptor = False
+                        if obj.name.startswith(desc.get_object_name()): 
+                            match_descriptor = True
+                            desc.generate_xml(root, obj)
+                            continue
 
             else:
                 # Non-item groups (start, BG/FG objects, etc)
@@ -1314,7 +1328,7 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
                         desc.generate_xml(root, obj)
                         continue
 
-        # Iterator over all item groups
+        # Iterate over all item groups
         for ig in igs: 
             context.scene.frame_set(begin_frame)
             # Children list
@@ -1380,6 +1394,7 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
             print("Deleted frame zero keyframe for item group " + obj.name)
             obj.keyframe_delete("location", frame=begin_frame)
             obj.keyframe_delete("rotation_euler", frame=begin_frame)
+            obj.keyframe_delete("scale", frame=begin_frame)
 
         return {'FINISHED'}
 
