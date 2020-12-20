@@ -10,6 +10,7 @@ import mathutils
 import random
 import math
 import pdb
+import re
 
 from . import statics, stage_object_drawing, generate_config, dimension_dict
 from .descriptors import descriptors, descriptor_item_group, descriptor_model_stage, descriptor_track_path
@@ -82,7 +83,6 @@ class OBJECT_OT_confirm_add_external_objects(bpy.types.Operator):
         return  {'FINISHED'}
 
 # Operator for 'converting' the active object to a specific type
-# TODO: Make this remove tags so object names don't become cluttered
 class OBJECT_OT_convert_selected(bpy.types.Operator):
     bl_idname = "object.convert_selected"
     bl_label = "Convert Selected Item"
@@ -93,17 +93,23 @@ class OBJECT_OT_convert_selected(bpy.types.Operator):
 
     def execute(self, context):
         selected = bpy.context.active_object
+        bracket_re = re.compile(r"\[[^\]]*]")
+        no_replace = ["[MODEL]", "[NODISP]", "[MIR]", "[NOCOLI]"]
 
         # Set rotation mode
         #selected.rotation_mode = 'XZY'
 
         # Clear active properties
-        if self.prefix not in ["[MODEL]", "[NODISP]", "[MIR]", "[NOCOLI]"]:
+        if self.prefix not in no_replace:
             for key in selected.keys():
                 del selected[key]
 
+        # Remove existing prefixes
+        if bracket_re.match(selected.name) and self.prefix not in no_replace:
+            selected.name = bracket_re.sub(self.prefix, "")
+
         # Append new prefix
-        selected.name = self.prefix + " " + selected.name
+        selected.name = f"{self.prefix} {selected.name}"
 
         # Construct the newly converted object
         for desc in descriptors.descriptors:
@@ -159,8 +165,8 @@ class VIEW3D_PT_1_item_group_panel(bpy.types.Panel):
         new_item_group.name = "[IG] New Item Group"
 
 # UI panel for stage object creation
-class VIEW3D_PT_2_stage_object_panel(bpy.types.Panel):
-    bl_idname = "VIEW3D_PT_2_stage_object_panel"
+class VIEW3D_PT_2a_stage_object_panel(bpy.types.Panel):
+    bl_idname = "VIEW3D_PT_2a_stage_object_panel"
     bl_label = "Add Stage Objects"
     bl_category = "Blend2SMB"
     bl_space_type = "VIEW_3D"
@@ -234,6 +240,18 @@ class VIEW3D_PT_2_stage_object_panel(bpy.types.Panel):
 
             new_golf_hole = layout.operator("object.create_new_empty_and_select", text="Golf Hole")
             new_golf_hole.name = "[GOLF_HOLE] Golf Hole"
+
+
+# UI panel for external object creation
+class VIEW3D_PT_2b_stage_object_panel(bpy.types.Panel):
+    bl_idname = "VIEW3D_PT_2b_stage_object_panel"
+    bl_label = "Add External Objects"
+    bl_category = "Blend2SMB"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+
+    def draw(self, context):
+        layout = self.layout
 
         layout.label(text="Add External")
         external_objects = layout.operator("object.add_external_objects", text="External Objects")
@@ -409,6 +427,44 @@ class MATERIAL_PT_blend2smb_material(bpy.types.Panel):
         layout = self.layout
 
         layout.operator("material.mark_unshaded")
+        layout.prop(context.material, "mesh_preset")
+        layout.prop(context.material, "mat_preset")
+
+        #rgb5a3 (16bit, transp)
+        #rgb565 (16bit)
+        #rgba8 (24 bit, 8 bit transp)
+        
+        #i4 (4 bit grey)
+        #i8 (8 bit grey)
+
+        #ia4 (4 bit grey, 4 bit transparency)
+        layout.label(text="Texture Type")
+        cmpr_tex_row = layout.row(align=True)
+        cmpr = cmpr_tex_row.operator("material.set_material_flags", text="CMPR (default)")
+        cmpr.name = "CMPR"
+        cmpr.flag = "TEX"
+
+        rgb_tex_row = layout.row(align=True)
+        rgb5a3 = rgb_tex_row.operator("material.set_material_flags", text="RGB5A3")
+        rgb5a3.name = "RGB5A3"
+        rgb5a3.flag = "TEX"
+        rgb565 = rgb_tex_row.operator("material.set_material_flags", text="RGB565")
+        rgb565.name = "RGB565"
+        rgb565.flag = "TEX"
+        rgba8 = rgb_tex_row.operator("material.set_material_flags", text="RGBA8")
+        rgba8.name = "RGBA8"
+        rgba8.flag = "TEX"
+
+        ia_tex_row=layout.row(align=True)
+        i4 = ia_tex_row.operator("material.set_material_flags", text="I4")
+        i4.name = "I4"
+        i4.flag = "TEX"
+        i8 = ia_tex_row.operator("material.set_material_flags", text="I8")
+        i8.name = "I8"
+        i8.flag = "TEX"
+        ia4 = ia_tex_row.operator("material.set_material_flags", text="IA4")
+        ia4.name = "IA4"
+        ia4.flag = "TEX"
 
 # Operator for marking a material as unshaded
 class MATERIAL_OT_mark_unshaded(bpy.types.Operator):
@@ -443,6 +499,25 @@ class MATERIAL_OT_mark_unshaded(bpy.types.Operator):
                 links.new(material_output_node.inputs['Surface'], emission_node.outputs['Emission'])
                 links.new(emission_node.inputs['Color'], image_texture_node.outputs['Color'])
                 mat.name = "[UNSHADED] " + mat.name
+
+        return {'FINISHED'}
+
+# Operator for setting texture type of a material
+class MATERIAL_OT_set_material_flags(bpy.types.Operator):
+    bl_idname = "material.set_material_flags"
+    bl_label = "Set Texture Type"
+    bl_description = "Sets the material flags of the selected material."
+    bl_options = {'UNDO'}
+    name: bpy.props.StringProperty(default="CMPR")
+    flag: bpy.props.StringProperty(default="TEX")
+
+    def execute(self, context):
+        mat = context.material
+
+        if f"[{self.flag}_" in mat.name:
+            mat.name = re.sub(fr"(?<={self.flag}_)[^\]]*", self.name, mat.name)
+        else:
+            mat.name = f"[{self.flag}_{self.name}] {mat.name}"
 
         return {'FINISHED'}
 

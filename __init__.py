@@ -3,6 +3,7 @@ import importlib
 import inspect
 import traceback
 import pdb
+import re
 
 from . import developer_utils
 from .BlendToSMBStage2 import stage_editor, statics, menus
@@ -180,6 +181,18 @@ def load_handler(dummy):
 
     # Sync all UI properties
     stage_editor.autoUpdateUIProps()
+
+# Function for handling material preset updates
+def update_preset(self, context, prop, flag):
+    name = getattr(self, prop)
+
+    if name is not "":
+        if f"[{flag}_" in self.name:
+            self.name = re.sub(fr"(?<={flag}_)[^\]]*", name, self.name)
+        else:
+            self.name = f"[{flag}_{name}] {self.name}"
+    else:
+        self.name = re.sub(fr"\[{flag}_[^\]]*] ", "", self.name)
 
 # Register
 def register():
@@ -363,6 +376,10 @@ def register():
     bpy.types.Object.switch_properties = bpy.props.PointerProperty(
             type=stage_editor.SwitchProperties)
 
+    bpy.types.Material.mat_preset = bpy.props.StringProperty(name="Material Preset",
+                                        update=lambda s,c: update_preset(s, c, "mat_preset", "MAT"))
+    bpy.types.Material.mesh_preset = bpy.props.StringProperty(name="Mesh Preset",
+                                        update=lambda s,c: update_preset(s, c, "mesh_preset", "MESH"))
     menus.handle_register()
 
     bpy.app.handlers.load_post.append(load_handler)
@@ -408,6 +425,9 @@ def unregister():
     del bpy.types.Scene.fog_start_distance
     del bpy.types.Scene.fog_end_distance
     del bpy.types.Scene.fog_color
+
+    del bpy.types.Material.mat_preset
+    del bpy.types.Material.mesh_preset
 
     try:
         # Remove draw handlers
