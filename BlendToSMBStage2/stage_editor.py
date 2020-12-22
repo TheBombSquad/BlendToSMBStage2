@@ -346,6 +346,7 @@ class VIEW3D_PT_4_export_panel(bpy.types.Panel):
         layout.prop(context.scene, "export_raw_stagedef_path")
         layout.prop(context.scene, "export_stagedef_path")
         layout.prop(context.scene, "export_background_path")
+        layout.prop(context.scene, "gx_preset_path")
         layout.prop(context.scene, "auto_path_names")
         layout.label(text="Export Operators")
         layout.operator("object.generate_config", text="Generate Config")
@@ -1010,9 +1011,12 @@ class OBJECT_OT_export_gmatpl(bpy.types.Operator):
         gma_path = bpy.path.abspath(context.scene.export_gma_path)
         tpl_path = bpy.path.abspath(context.scene.export_tpl_path)
         gx_path = bpy.utils.script_path_user() + "/addons/BlendToSMBStage2/GxUtils/GxModelViewer.exe"
+        preset_path = bpy.path.abspath(context.scene.gx_preset_path)
 
         args = []
         args.append(gx_path)
+        args.append("-setPresetFolder")
+        args.append(preset_path)
         args.append("-importObjMtl")
         args.append(obj_path)
         args.append("-removeUnusedTextures")

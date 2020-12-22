@@ -280,6 +280,12 @@ def register():
             subtype='FILE_PATH',
             default=""
     )
+    bpy.types.Scene.gx_preset_path = bpy.props.StringProperty(
+            name="Flag Preset Folder",
+            description="The path to a folder containg GxModelViewer presets.",
+            subtype='DIR_PATH',
+            default="//"
+    )
     bpy.types.Scene.falloutProp = bpy.props.IntProperty(
             name="Fallout Plane",
             description="Height of the fallout plane",
@@ -403,6 +409,7 @@ def unregister():
     del bpy.types.Scene.export_background_path
     del bpy.types.Scene.import_gma_path
     del bpy.types.Scene.import_tpl_path
+    del bpy.types.Scene.gx_preset_path
     del bpy.types.Scene.draw_falloutProp
     del bpy.types.Scene.draw_stage_objects
     del bpy.types.Scene.draw_collision_grid
