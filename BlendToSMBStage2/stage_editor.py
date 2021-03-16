@@ -1510,7 +1510,7 @@ def get_collision_triangle_list(self, context):
         for score in [1,10,50,100,150,200,300,400,500,750,1000]:
             # formula for target flags is 0x8000 | (2 * score)
             flag = 2 * score - 32768
-            text = '{} points'.format(score)
+            text = '{} points'.format(score) if score != 1 else '1 point'
             items.append((str(flag), text, ''))
 
 
