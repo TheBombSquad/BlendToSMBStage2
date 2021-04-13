@@ -321,7 +321,8 @@ def register():
             description="Game mode of the stage to be exported.",
             items=[('MAIN_GAME', 'Main Game', ''),
                    ('MONKEY_RACE_2', 'Monkey Race 2', ''),
-                   ('MONKEY_GOLF_2', 'Monkey Golf 2', '')],
+                   ('MONKEY_GOLF_2', 'Monkey Golf 2', ''),
+                   ('MONKEY_TARGET_2', 'Monkey Target 2', '')],
             default='MAIN_GAME'
     )
 
