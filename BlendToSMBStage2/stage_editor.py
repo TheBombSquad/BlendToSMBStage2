@@ -1296,7 +1296,12 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
         
         # OBJ file path
         modelImport = etree.SubElement(root, "modelImport")
-        modelImport.text = context.scene.export_model_path
+        if context.scene.export_model_path.startswith("//"):
+            # It's a relative path
+            modelImport.text = context.scene.export_model_path
+        else:
+            # It's an absolute path
+            modelImport.text = "file://" + context.scene.export_model_path
 
         # Game mode type
         mode = etree.SubElement(root, "stageType")
