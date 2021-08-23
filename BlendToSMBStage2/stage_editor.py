@@ -9,7 +9,6 @@ import sys
 import mathutils
 import random
 import math
-import pdb
 import re
 
 from . import statics, stage_object_drawing, generate_config, dimension_dict
@@ -29,7 +28,7 @@ class OBJECT_OT_add_external_objects(bpy.types.Operator):
     bl_idname = "object.add_external_objects"
     bl_label = "Add External Objects"
     bl_description = "Add external objects, such as those found in background files"
-    bl_options={'UNDO'} 
+    bl_options = {'UNDO'} 
 
     def execute(self, context):
         #Create the text block
@@ -69,7 +68,7 @@ bpy.ops.object.confirm_add_external_objects("INVOKE_DEFAULT", objects=external_o
 class OBJECT_OT_confirm_add_external_objects(bpy.types.Operator):
     bl_idname = "object.confirm_add_external_objects"
     bl_label = "Confirm Add External Objects"
-    bl_options={'UNDO'} 
+    bl_options = {'UNDO'} 
     
     objects: bpy.props.StringProperty()
 
@@ -87,7 +86,7 @@ class OBJECT_OT_convert_selected(bpy.types.Operator):
     bl_idname = "object.convert_selected"
     bl_label = "Convert Selected Item"
     bl_description = "Converts selected item to a specified type"
-    bl_options={'UNDO'} 
+    bl_options = {'UNDO'} 
 
     prefix: bpy.props.StringProperty(default="[]")
 
@@ -123,7 +122,7 @@ class OBJECT_OT_create_new_empty_and_select(bpy.types.Operator):
     bl_idname = "object.create_new_empty_and_select"
     bl_label = "Create New Empty And Select"
     bl_description = "Creates a new empty object of a specified name"
-    bl_options={'UNDO'} 
+    bl_options = {'UNDO'} 
     name: bpy.props.StringProperty(default="Empty")
 
     def execute(self, context):
@@ -620,7 +619,7 @@ class OBJECT_OT_generate_track_path(bpy.types.Operator):
     bl_idname = "object.generate_track_path"
     bl_label = "Generate Track Path from Selected"
     bl_description = "Generates a track path from the selected faces"
-    bl_options={'UNDO'} 
+    bl_options = {'UNDO'} 
 
     def execute(self, context):
         obj = bpy.context.active_object
@@ -694,7 +693,7 @@ class OBJECT_OT_generate_cpu_paths(bpy.types.Operator):
     bl_idname = "object.generate_cpu_paths"
     bl_label = "Generate CPU Paths"
     bl_description = "Generates 7 CPU paths for the selected track path"
-    bl_options={'UNDO'} 
+    bl_options = {'UNDO'} 
 
     def execute(self, context):
         path = bpy.context.active_object
@@ -717,7 +716,7 @@ class OBJECT_OT_generate_cpu_starts(bpy.types.Operator):
     bl_idname = "object.generate_cpu_starts"
     bl_label = "Generate CPU Starts"
     bl_description = "Generates 7 CPU starting positions for the selected starting position"
-    bl_options={'UNDO'} 
+    bl_options = {'UNDO'} 
 
     def execute(self, context):
         start = bpy.context.active_object
@@ -739,7 +738,7 @@ class OBJECT_OT_set_backface_culling(bpy.types.Operator):
     bl_idname = "object.set_backface_culling"
     bl_label = "Set Backface Culling"
     bl_description = "Sets the backface culling attribute on all materials"
-    bl_options={'UNDO'} 
+    bl_options = {'UNDO'} 
 
     def execute(self, context):
         for mat in bpy.data.materials:
@@ -753,7 +752,7 @@ class OBJECT_OT_export_obj(bpy.types.Operator):
     bl_idname = "object.export_obj"
     bl_label = "Export OBJ"
     bl_description = "Clean up model and export OBJ to the selected path"
-    bl_options={'UNDO'} 
+    bl_options = {'UNDO'} 
 
     def execute(self, context):
         origin_frame = context.scene.frame_start
@@ -1003,7 +1002,7 @@ class OBJECT_OT_export_gmatpl(bpy.types.Operator):
     bl_idname = "object.export_gmatpl"
     bl_label = "Export OBJ"
     bl_description = "Export an OBJ, then call GxModelViewer to export a GMA/TPL to the specified path"
-    bl_options={'UNDO'} 
+    bl_options = {'UNDO'} 
 
     def execute(self, context):
         bpy.ops.object.export_obj("INVOKE_DEFAULT")
@@ -1046,7 +1045,7 @@ class OBJECT_OT_export_stagedef(bpy.types.Operator):
     bl_idname = "object.export_stagedef"
     bl_label = "Export OBJ"
     bl_description = "Export an OBJ, then call Workshop 2 to export a LZ/LZ.RAW to the specified path"
-    bl_options={'UNDO'} 
+    bl_options = {'UNDO'} 
 
     compressed: bpy.props.BoolProperty(default=True)
     def execute(self, context):
@@ -1083,7 +1082,7 @@ class OBJECT_OT_import_background(bpy.types.Operator):
     bl_idname ="object.import_background"
     bl_label = "Import Background"
     bl_description = "Import background from the specified .XML file."
-    bl_options={'UNDO'}
+    bl_options = {'UNDO'}
     
     def execute(self, context):
         bg_path = bpy.path.abspath(context.scene.background_import_path)
@@ -1102,7 +1101,7 @@ class OBJECT_OT_import_background(bpy.types.Operator):
             convert = lambda v, n: Vector((float(v[0]), (-1+int(2*(not n)))*float(v[2]), float(v[1])))
             rad = lambda v: Vector((math.radians(v[0]), math.radians(v[1]), math.radians(v[2])))
 
-            for i, imported_bg_model in enumerate(bg_root.getchildren()):
+            for i, imported_bg_model in enumerate(list(bg_root)):
                 preview_name = imported_bg_model.find('name').text
                 preview_pos = convert(list(imported_bg_model.find('position').attrib.values()), True)
                 preview_rot = rad(convert(list(imported_bg_model.find('rotation').attrib.values()), True))
@@ -1131,7 +1130,7 @@ class OBJECT_OT_import_background(bpy.types.Operator):
                 if effects is not None: 
                     for effect in effects:
                         if effect.tag == 'effectType1':
-                            for j, ef1 in enumerate(effect.getchildren()):
+                            for j, ef1 in enumerate(list(effect)):
                                 effect_pos = convert([ef1.attrib['posX'], ef1.attrib['posY'], ef1.attrib['posZ']], True)
                                 effect_rot = rad(convert([ef1.attrib['rotX'], ef1.attrib['rotY'], ef1.attrib['rotZ']], True))
 
@@ -1142,7 +1141,7 @@ class OBJECT_OT_import_background(bpy.types.Operator):
                                 bpy.context.collection.objects.link(newEmpty)
 
                         elif effect.tag == 'effectType2':
-                            for j, ef2 in enumerate(effect.getchildren()):
+                            for j, ef2 in enumerate(list(effect)):
                                 effect_pos = convert([ef2.attrib['posX'], ef2.attrib['posY'], ef2.attrib['posZ']], True)
                                 effect_rot = Vector((0,0,0))
 
@@ -1159,7 +1158,7 @@ class OBJECT_OT_export_background(bpy.types.Operator):
     bl_idname ="object.export_background"
     bl_label = "Export Background"
     bl_description = "Export background to the specified .XML file."
-    bl_options={'UNDO'}
+    bl_options = {'UNDO'}
     
     def execute(self, context):
         print("Generating background/foreground config...")
@@ -1200,12 +1199,13 @@ class OBJECT_OT_export_background(bpy.types.Operator):
         print("Finished generating config")
 
         return {'FINISHED'}
-# Operator for appending all imported background objects in an XML to a config root
+
+# Function for appending all imported background objects in an XML to a config root
 def append_imported_bg_objects(self, context, bg_root, dest_root, obj_names):
     convert = lambda v, n: Vector((float(v[0]), (-1+int(2*(not n)))*float(v[2]), float(v[1])))
     deg = lambda v: Vector((math.degrees(v[0]), math.degrees(v[1]), math.degrees(v[2])))
 
-    for index, imported_bg_model in enumerate(bg_root.getchildren()):
+    for index, imported_bg_model in enumerate(list(bg_root)):
         name = imported_bg_model.find('name')
         ported_name = "[EXT_IMPORTED:" + name.text + ":" + str(index) + "]" 
         if ported_name in obj_names:
@@ -1249,7 +1249,7 @@ def append_imported_bg_objects(self, context, bg_root, dest_root, obj_names):
             if effects is not None:
                 for effect in effects:
                     if effect.tag == 'effectType1':
-                        for j, ef1 in enumerate(effect.getchildren()):
+                        for j, ef1 in enumerate(list(effect)):
                             ported_name = "[EXT_IMPORTED_FX:" + name.text + ":" + str(index) + ":" + str(j) + "]" 
                             effect_obj = context.scene.objects[ported_name]
                             attr = ef1.attrib
@@ -1261,7 +1261,7 @@ def append_imported_bg_objects(self, context, bg_root, dest_root, obj_names):
                             attr['rotZ'] = str(math.degrees(-1*effect_obj.rotation_euler[1])) 
 
                     elif effect.tag == 'effectType2':
-                        for j, ef2 in enumerate(effect.getchildren()):
+                        for j, ef2 in enumerate(list(effect)):
                             ported_name = "[EXT_IMPORTED_FX:" + name.text + ":" + str(index) + ":" + str(j) + "]" 
                             effect_obj = context.scene.objects[ported_name]
                             attr = ef2.attrib
@@ -1270,10 +1270,10 @@ def append_imported_bg_objects(self, context, bg_root, dest_root, obj_names):
                             attr['posZ'] = str(-1*effect_obj.location[1]) 
             anim = imported_bg_model.find('animKeyframes')
             if anim is not None:
-                for tag in anim.getchildren():
+                for tag in list(anim):
                     for tag_name, delta in [('posX', posXDelta), ('posY', posYDelta), ('posZ', posZDelta), ('rotX', rotXDelta), ('rotY', rotYDelta), ('rotZ', rotZDelta), ('scaleX', scaleXDelta), ('scaleY', scaleYDelta), ('scaleZ', scaleZDelta)]:
                         if tag.tag == tag_name:
-                            for keyframe in tag.getchildren():
+                            for keyframe in list(tag):
                                 if "scale" not in tag_name:
                                     keyframe.attrib['value'] = str(float(keyframe.attrib['value']) + delta)
                                 else:
@@ -1287,7 +1287,7 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
     bl_idname = "object.generate_config"
     bl_label = "Generate Config"
     bl_description = "Generate .XML file for config export"
-    bl_options={'UNDO'} 
+    bl_options = {'UNDO'} 
 
     def execute(self, context):
         print("Generating config...")
@@ -1391,9 +1391,9 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
                         remove_beginframe_objs.append(obj)
 
                     print("\tInserted frame zero keyframe for item group " + obj.name)
-                    obj.keyframe_insert("location", frame=begin_frame, options={'INSERTKEY_NEEDED'})
-                    obj.keyframe_insert("rotation_euler", frame=begin_frame, options={'INSERTKEY_NEEDED'})
-                    obj.keyframe_insert("scale", frame=begin_frame, options={'INSERTKEY_NEEDED'})
+                    obj.keyframe_insert("location", frame=begin_frame, options = {'INSERTKEY_NEEDED'})
+                    obj.keyframe_insert("rotation_euler", frame=begin_frame, options = {'INSERTKEY_NEEDED'})
+                    obj.keyframe_insert("scale", frame=begin_frame, options = {'INSERTKEY_NEEDED'})
                 
                 if "[IG]" not in obj.name:
                     for desc in descriptors.descriptors_root:
