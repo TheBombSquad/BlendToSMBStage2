@@ -31,10 +31,10 @@ class OBJECT_OT_add_external_objects(bpy.types.Operator):
     bl_options = {'UNDO'} 
 
     def execute(self, context):
-        #Create the text block
-        textblock  = bpy.data.texts.get("blendtosmbstage:addexternalobjects")
+        # Create the text block
+        textblock = bpy.data.texts.get("blendtosmbstage:addexternalobjects")
         if textblock is None:
-            textblock  = bpy.data.texts.new("blendtosmbstage:addexternalobjects")
+            textblock = bpy.data.texts.new("blendtosmbstage:addexternalobjects")
 
         textblock.from_string("""# Write your external objects from line 9 onwards, one per line
 # Then hit "Run script" at the bottom to add them
@@ -60,7 +60,7 @@ bpy.ops.object.confirm_add_external_objects("INVOKE_DEFAULT", objects=external_o
         area.spaces[0].show_line_highlight = True
         area.spaces[0].show_line_numbers = True
         area.spaces[0].show_syntax_highlight = True
-        bpy.ops.text.jump(line=1) #Scroll to the top
+        bpy.ops.text.jump(line=1)  #Scroll to the top
 
         return {'FINISHED'}
 
@@ -79,7 +79,7 @@ class OBJECT_OT_confirm_add_external_objects(bpy.types.Operator):
                 continue
 
             bpy.ops.object.create_new_empty_and_select("INVOKE_DEFAULT", name="[EXT:{}]".format(str(obj)))
-        return  {'FINISHED'}
+        return {'FINISHED'}
 
 # Operator for 'converting' the active object to a specific type
 class OBJECT_OT_convert_selected(bpy.types.Operator):
@@ -226,7 +226,7 @@ class VIEW3D_PT_2a_stage_object_panel(bpy.types.Panel):
         new_fast_forward = switch_row.operator("object.create_new_empty_and_select", text=">>")
         new_fast_forward.name = "[SW_FF] New Fast Forward Switch"
 
-        if (game_mode == 'MONKEY_RACE_2'):
+        if game_mode == 'MONKEY_RACE_2':
             layout.label(text="Add Monkey Race Mechanics")
 
             new_booster = layout.operator("object.create_new_empty_and_select", text="Booster")
@@ -234,7 +234,7 @@ class VIEW3D_PT_2a_stage_object_panel(bpy.types.Panel):
 
             new_path = layout.operator("object.generate_track_path", text="Track Path from Selected")
 
-        elif (game_mode == 'MONKEY_GOLF_2'):
+        elif game_mode == 'MONKEY_GOLF_2':
             layout.label(text="Add Monkey Golf Mechanics")
 
             new_golf_hole = layout.operator("object.create_new_empty_and_select", text="Golf Hole")
@@ -352,9 +352,9 @@ class VIEW3D_PT_4_export_panel(bpy.types.Panel):
         layout.operator("object.export_obj", text="Export OBJ")
         layout.operator("object.export_gmatpl", text="Export GMA/TPL")
         export_lz_raw = layout.operator("object.export_stagedef", text="Export LZ.RAW")
-        export_lz_raw.compressed = False;
+        export_lz_raw.compressed = False
         export_lz = layout.operator("object.export_stagedef", text="Export LZ")
-        export_lz.compressed = True;
+        export_lz.compressed = True
         export_bg = layout.operator("object.export_background", text="Export Background")
 
 # UI panel for global scene/stage settings
@@ -421,7 +421,7 @@ class MATERIAL_PT_blend2smb_material(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return (context.object.active_material is not None)
+        return context.object.active_material is not None
 
     def draw(self, context):
         layout = self.layout
@@ -475,7 +475,7 @@ class MATERIAL_OT_mark_unshaded(bpy.types.Operator):
 
     def execute(self, context):
         mat = context.material 
-        if (mat.use_nodes):
+        if mat.use_nodes:
             nodes = mat.node_tree.nodes
             links = mat.node_tree.links
 
@@ -484,11 +484,11 @@ class MATERIAL_OT_mark_unshaded(bpy.types.Operator):
             principled_node = None
 
             for node in nodes:
-                if (node.type == 'BSDF_PRINCIPLED'):
+                if node.type == 'BSDF_PRINCIPLED':
                     principled_node = node
-                elif (node.type =='OUTPUT_MATERIAL'):
+                elif node.type =='OUTPUT_MATERIAL':
                     material_output_node = node
-                elif (node.type == 'TEX_IMAGE'):
+                elif node.type == 'TEX_IMAGE':
                     image_texture_node = node
 
             # Convert Principled BSDF to Emission
@@ -566,7 +566,7 @@ def updateUIProps(obj):
         
         for group in [group for group in propertyGroup if group is not None]:
             for ui_prop in group.__annotations__.keys():
-                if (ui_prop in obj.keys()):
+                if ui_prop in obj.keys():
                     if getattr(group, ui_prop) is not None:
                         val = type(getattr(group, ui_prop))(obj[ui_prop])
                         if getattr(group, ui_prop) != val:
@@ -634,7 +634,7 @@ class OBJECT_OT_generate_track_path(bpy.types.Operator):
         # Track path keyframes are generated from the median point of each keyframe
         median_points = [face.calc_center_median() for face in selected_faces]
 
-        if (len(median_points) > 101):
+        if len(median_points) > 101:
             raise Exception("Track paths cannot have more than 100 points selected")
 
         # Track paths must have 101 keyframes, so we need to subdivide it
@@ -711,7 +711,7 @@ class OBJECT_OT_generate_cpu_paths(bpy.types.Operator):
 
         return {'FINISHED'}
 
-# Opeartor for generatin an arrangement of 7 CPU player starts
+# Operator for generating an arrangement of 7 CPU player starts
 class OBJECT_OT_generate_cpu_starts(bpy.types.Operator):
     bl_idname = "object.generate_cpu_starts"
     bl_label = "Generate CPU Starts"
@@ -790,7 +790,7 @@ class OBJECT_OT_export_obj(bpy.types.Operator):
             if obj.animation_data is not None and obj.animation_data.action is not None:
                 orig_matrix_dict[obj.name] = copy.copy(obj.matrix_world)
                 print("\tMoving object " + obj.name + " to origin for export")
-                fcurves  = obj.animation_data.action.fcurves
+                fcurves = obj.animation_data.action.fcurves
                 orig_pos = [None, None, None]
                 orig_rot = [None, None, None]
                 orig_scale = [None, None, None]
@@ -878,7 +878,7 @@ class OBJECT_OT_export_obj(bpy.types.Operator):
         # Oh gosh, more hacky stuff... this lets the unshaded material preview work since only
         # principled BSDF materials get exported by Blender's OBJ exporter
         for mat in bpy.data.materials:
-            if (mat.use_nodes) and ("[UNSHADED]" in mat.name):
+            if mat.use_nodes and "[UNSHADED]" in mat.name:
                 nodes = mat.node_tree.nodes
                 links = mat.node_tree.links
 
@@ -887,13 +887,13 @@ class OBJECT_OT_export_obj(bpy.types.Operator):
                 emission_node = None
 
                 for node in nodes:
-                    if (node.type == 'BSDF_PRINCIPLED'):
+                    if node.type == 'BSDF_PRINCIPLED':
                         continue
-                    elif (node.type =='OUTPUT_MATERIAL'):
+                    elif node.type =='OUTPUT_MATERIAL':
                         material_output_node = node
-                    elif (node.type == 'TEX_IMAGE'):
+                    elif node.type == 'TEX_IMAGE':
                         image_texture_node = node
-                    elif (node.type == 'EMISSION'):
+                    elif node.type == 'EMISSION':
                         emission_node = node
 
                 # Convert emission to principled BSDF
@@ -915,7 +915,7 @@ class OBJECT_OT_export_obj(bpy.types.Operator):
 
         # Undoes the hacky thing
         for mat in bpy.data.materials:
-            if (mat.use_nodes) and ('[UNSHADED]' in mat.name):
+            if mat.use_nodes and '[UNSHADED]' in mat.name:
                 nodes = mat.node_tree.nodes
                 links = mat.node_tree.links
 
@@ -924,11 +924,11 @@ class OBJECT_OT_export_obj(bpy.types.Operator):
                 principled_node = None
 
                 for node in nodes:
-                    if (node.type == 'BSDF_PRINCIPLED'):
+                    if node.type == 'BSDF_PRINCIPLED':
                         principled_node = node
-                    elif (node.type =='OUTPUT_MATERIAL'):
+                    elif node.type =='OUTPUT_MATERIAL':
                         material_output_node = node
-                    elif (node.type == 'TEX_IMAGE'):
+                    elif node.type == 'TEX_IMAGE':
                         image_texture_node = node
 
                 # Convert Principled BSDF to Emission
@@ -1071,7 +1071,7 @@ class OBJECT_OT_export_stagedef(bpy.types.Operator):
         ws_result = subprocess.run(command_args, capture_output=True)
         errors = [error for error in ws_result.stdout.decode().split('\n') if ("Critical" in error) or ("Error" in error) or ("Warning" in error)]
         if len(errors) > 0:
-            self.report({'ERROR'}, "Workshop 2 warnings/errors occured: " + "\n".join(errors))
+            self.report({'ERROR'}, "Workshop 2 warnings/errors occurred: " + "\n".join(errors))
 
         print(ws_result.stdout.decode())
 
@@ -1098,20 +1098,24 @@ class OBJECT_OT_import_background(bpy.types.Operator):
             return {'CANCELLED'}
 
         if context.scene.background_import_preview:
-            convert = lambda v, n: Vector((float(v[0]), (-1+int(2*(not n)))*float(v[2]), float(v[1])))
-            rad = lambda v: Vector((math.radians(v[0]), math.radians(v[1]), math.radians(v[2])))
+            # Converts an XML attribute list from SMB coordinates to Blender coordinates,
+            # 'n' is whether or not to negate the Y axis
+            convert_from_smb_coords = lambda v, n: Vector((float(v[0]), (-1+int(2*(not n)))*float(v[2]), float(v[1])))
+
+            # Converts an XML attribute list from degrees to radians
+            convert_to_radians = lambda v: Vector((math.radians(v[0]), math.radians(v[1]), math.radians(v[2])))
 
             for i, imported_bg_model in enumerate(list(bg_root)):
                 preview_name = imported_bg_model.find('name').text
-                preview_pos = convert(list(imported_bg_model.find('position').attrib.values()), True)
-                preview_rot = rad(convert(list(imported_bg_model.find('rotation').attrib.values()), True))
-                preview_scale = convert(list(imported_bg_model.find('scale').attrib.values()), False)
-                preview_dimensions = Vector((1,1,1))
+                preview_pos = convert_from_smb_coords(list(imported_bg_model.find('position').attrib.values()), True)
+                preview_rot = convert_to_radians(convert_from_smb_coords(list(imported_bg_model.find('rotation').attrib.values()), True))
+                preview_scale = convert_from_smb_coords(list(imported_bg_model.find('scale').attrib.values()), False)
+                preview_dimensions = Vector((1, 1, 1))
 
                 print("Importing model " + str(preview_name))
 
-                if (preview_name in dimension_dict.dimensions.keys()):
-                    preview_dimensions = convert(list(dimension_dict.dimensions[preview_name]), False)
+                if preview_name in dimension_dict.dimensions.keys():
+                    preview_dimensions = convert_from_smb_coords(list(dimension_dict.dimensions[preview_name]), False)
 
                 newEmpty = bpy.data.objects.new("[EXT_IMPORTED:{}:{}]".format(preview_name, i), None)
                 newEmpty.location = preview_pos
@@ -1131,8 +1135,8 @@ class OBJECT_OT_import_background(bpy.types.Operator):
                     for effect in effects:
                         if effect.tag == 'effectType1':
                             for j, ef1 in enumerate(list(effect)):
-                                effect_pos = convert([ef1.attrib['posX'], ef1.attrib['posY'], ef1.attrib['posZ']], True)
-                                effect_rot = rad(convert([ef1.attrib['rotX'], ef1.attrib['rotY'], ef1.attrib['rotZ']], True))
+                                effect_pos = convert_from_smb_coords([ef1.attrib['posX'], ef1.attrib['posY'], ef1.attrib['posZ']], True)
+                                effect_rot = convert_to_radians(convert_from_smb_coords([ef1.attrib['rotX'], ef1.attrib['rotY'], ef1.attrib['rotZ']], True))
 
                                 newEmpty = bpy.data.objects.new("[EXT_IMPORTED_FX:{}:{}:{}]".format(preview_name, i, j), None)
                                 newEmpty.location = effect_pos
@@ -1142,7 +1146,7 @@ class OBJECT_OT_import_background(bpy.types.Operator):
 
                         elif effect.tag == 'effectType2':
                             for j, ef2 in enumerate(list(effect)):
-                                effect_pos = convert([ef2.attrib['posX'], ef2.attrib['posY'], ef2.attrib['posZ']], True)
+                                effect_pos = convert_from_smb_coords([ef2.attrib['posX'], ef2.attrib['posY'], ef2.attrib['posZ']], True)
                                 effect_rot = Vector((0,0,0))
 
                                 newEmpty = bpy.data.objects.new("[EXT_IMPORTED_FX:{}:{}:{}]".format(preview_name, i, j), None)
@@ -1178,7 +1182,7 @@ class OBJECT_OT_export_background(bpy.types.Operator):
         # Import background and foreground objects from a .XML file, if it exists
         obj_names = [obj.name for obj in context.scene.objects]
         bg_path = bpy.path.abspath(context.scene.background_import_path)
-        if (os.path.exists(bg_path)):
+        if os.path.exists(bg_path):
             bg = etree.parse(bg_path)
             bg_root = bg.getroot()
 
@@ -1189,98 +1193,167 @@ class OBJECT_OT_export_background(bpy.types.Operator):
             append_imported_bg_objects(self, context, bg_root, root, obj_names)
 
         print("Completed, saving...")
+
         if platform == "linux" or platform == "linux2":
             config = etree.tostring(root, pretty_print=True, encoding="unicode")
         else:
             config = etree.tostring(root, encoding="unicode")
+
         config_file = open(bpy.path.abspath(context.scene.export_background_path), "w")
         config_file.write(config)
         config_file.close()
+
         print("Finished generating config")
 
         return {'FINISHED'}
 
 # Function for appending all imported background objects in an XML to a config root
 def append_imported_bg_objects(self, context, bg_root, dest_root, obj_names):
-    convert = lambda v, n: Vector((float(v[0]), (-1+int(2*(not n)))*float(v[2]), float(v[1])))
-    deg = lambda v: Vector((math.degrees(v[0]), math.degrees(v[1]), math.degrees(v[2])))
+    # There's lots of wacky axis swapping going on here so make sure to pay attention to that
+
+    # Converts an XML attribute list from Blender coordinates to SMB coordinates,
+    # 'n' is whether or not to negate the Z axis
+    convert_to_smb_coords = lambda v, n: Vector((float(v[0]), float(v[2]), (float(-1+int(2*(not n)))*float(v[1]))))
+
+    # Converts an XML attribute list to a vector.
+    convert_to_vector = lambda v: Vector((float(v[0]), float(v[1]), float(v[2])))
+
+    # Converts an XML attribute list from radians to degrees
+    convert_to_degrees = lambda v: Vector((math.degrees(v[0]), math.degrees(v[1]), math.degrees(v[2])))
 
     for index, imported_bg_model in enumerate(list(bg_root)):
         name = imported_bg_model.find('name')
-        ported_name = "[EXT_IMPORTED:" + name.text + ":" + str(index) + "]" 
-        if ported_name in obj_names:
-            print("Exporting imported background object " + ported_name + "...")
-            bg_obj = context.scene.objects[ported_name]
+        imported_name = "[EXT_IMPORTED:" + name.text + ":" + str(index) + "]"
 
-            orig_pos = convert(list(imported_bg_model.find('position').attrib.values()), True) 
-            orig_rot = convert(list(imported_bg_model.find('rotation').attrib.values()), True) 
-            orig_scale = convert(list(imported_bg_model.find('scale').attrib.values()), False) 
+        print(f"Exporting imported background object {imported_name}...")
 
-            bg_pos = imported_bg_model.find('position').attrib
-            bg_pos['x'] = str(bg_obj.location[0])
-            bg_pos['y'] = str(bg_obj.location[2])
-            bg_pos['z'] = str(-1 * bg_obj.location[1])
-            
-            bg_rot = imported_bg_model.find('rotation').attrib
-            bg_rot['x'] = str(math.degrees(bg_obj.rotation_euler[0]))
-            bg_rot['y'] = str(math.degrees(bg_obj.rotation_euler[2]))
-            bg_rot['z'] = str(-1 * math.degrees(bg_obj.rotation_euler[1]))
+        # Special handling if the object was imported as a visual preview and potentially modified
+        if imported_name in obj_names:
+            imported_object = context.scene.objects[imported_name]
+        else:
+            imported_object = None
 
-            bg_dimensions = Vector((1,1,1))
+        # Grabs the original pos/rot/scale from the imported XML file
+        # The XML background is expected to provide vectors in SMB's coordinate system, so we do not convert here
+        orig_pos = convert_to_vector(list(imported_bg_model.find('position').attrib.values()))
+        orig_rot = convert_to_vector(list(imported_bg_model.find('rotation').attrib.values()))
+        orig_scale = convert_to_vector(list(imported_bg_model.find('scale').attrib.values()))
+
+        # Handles position of imported BG object
+        bg_pos = imported_bg_model.find('position').attrib
+
+        # Special handling if the object was imported as a visual preview and potentially modified
+
+        if imported_object is None:
+            current_bg_pos = orig_pos
+        else:
+            current_bg_pos = convert_to_smb_coords(imported_object.location, True)
+
+        bg_pos['x'] = str(current_bg_pos[0])
+        bg_pos['y'] = str(current_bg_pos[1])
+        bg_pos['z'] = str(current_bg_pos[2])
+
+        # Handles rotation of imported BG object
+        bg_rot = imported_bg_model.find('rotation').attrib
+
+        if imported_object is None:
+            current_bg_rot = orig_rot
+        else:
+            current_bg_rot = convert_to_smb_coords(convert_to_degrees(imported_object.rotation_euler), True)
+
+        bg_rot['x'] = str(current_bg_rot[0])
+        bg_rot['y'] = str(current_bg_rot[1])
+        bg_rot['z'] = str(current_bg_rot[2])
+
+        # Handles scale of imported BG object
+        bg_scale = imported_bg_model.find('scale').attrib
+
+        # Special handling if the object was imported as a visual preview and potentially modified
+        # Also special handling for the case of cube empty approximations, which are scaled to their in-game
+        # dimensions. Since this effect is achieved through scaling, this is accounted for here, and the scaling
+        # is un-done.
+        if imported_object is None:
+            current_bg_scale = orig_scale
+        else:
+            bg_dimensions = Vector((1, 1, 1))
             if name.text in dimension_dict.dimensions.keys():
                 bg_dimensions = dimension_dict.dimensions[name.text]
 
-            bg_scale = imported_bg_model.find('scale').attrib
-            bg_scale['x'] = str(bg_obj.scale[0] / bg_dimensions[0])
-            bg_scale['y'] = str(bg_obj.scale[2] / bg_dimensions[1])
-            bg_scale['z'] = str(bg_obj.scale[1] / bg_dimensions[2])
-            
-            posXDelta = bg_obj.location[0] - orig_pos[0] 
-            posYDelta = bg_obj.location[2] - orig_pos[2]
-            posZDelta = bg_obj.location[1] - orig_pos[1]
-            rotXDelta = math.degrees(bg_obj.rotation_euler[0]) - orig_rot[0] 
-            rotYDelta = math.degrees(bg_obj.rotation_euler[2]) - orig_rot[2]
-            rotZDelta = math.degrees(bg_obj.rotation_euler[1]) - orig_rot[1]
-            scaleXDelta = float(bg_scale['x']) / orig_scale[0] 
-            scaleYDelta = float(bg_scale['y']) / orig_scale[2]
-            scaleZDelta = float(bg_scale['z']) / orig_scale[1]
+            adjusted_scale = Vector((imported_object.scale[0]/bg_dimensions[0],
+                                     imported_object.scale[1]/bg_dimensions[2],
+                                     imported_object.scale[2]/bg_dimensions[1]))
+            current_bg_scale = convert_to_smb_coords(adjusted_scale, False)
 
-            effects = imported_bg_model.find('effectKeyframes')
-            if effects is not None:
-                for effect in effects:
-                    if effect.tag == 'effectType1':
-                        for j, ef1 in enumerate(list(effect)):
-                            ported_name = "[EXT_IMPORTED_FX:" + name.text + ":" + str(index) + ":" + str(j) + "]" 
-                            effect_obj = context.scene.objects[ported_name]
-                            attr = ef1.attrib
-                            attr['posX'] = str(effect_obj.location[0]) 
+        bg_scale['x'] = str(current_bg_scale[0])
+        bg_scale['y'] = str(current_bg_scale[1])
+        bg_scale['z'] = str(current_bg_scale[2])
+
+        # For imported effects
+        effects = imported_bg_model.find('effectKeyframes')
+        if effects is not None:
+            for effect in effects:
+                if effect.tag == 'effectType1':
+                    for j, ef1 in enumerate(list(effect)):
+                        imported_name = "[EXT_IMPORTED_FX:" + name.text + ":" + str(index) + ":" + str(j) + "]"
+
+                        if imported_name in obj_names:
+                            effect_obj = context.scene.objects[imported_name]
+                        else:
+                            effect_obj= None
+
+                        attr = ef1.attrib
+
+                        if effect_obj is not None:
+                            attr['posX'] = str(effect_obj.location[0])
                             attr['posY'] = str(effect_obj.location[2])
-                            attr['posZ'] = str(-1*effect_obj.location[1]) 
+                            attr['posZ'] = str(-1*effect_obj.location[1])
                             attr['rotX'] = str(math.degrees(effect_obj.rotation_euler[0]))
                             attr['rotY'] = str(math.degrees(effect_obj.rotation_euler[2]))
-                            attr['rotZ'] = str(math.degrees(-1*effect_obj.rotation_euler[1])) 
+                            attr['rotZ'] = str(math.degrees(-1*effect_obj.rotation_euler[1]))
 
-                    elif effect.tag == 'effectType2':
-                        for j, ef2 in enumerate(list(effect)):
-                            ported_name = "[EXT_IMPORTED_FX:" + name.text + ":" + str(index) + ":" + str(j) + "]" 
-                            effect_obj = context.scene.objects[ported_name]
-                            attr = ef2.attrib
-                            attr['posX'] = str(effect_obj.location[0]) 
+                elif effect.tag == 'effectType2':
+                    for j, ef2 in enumerate(list(effect)):
+                        imported_name = "[EXT_IMPORTED_FX:" + name.text + ":" + str(index) + ":" + str(j) + "]"
+
+                        if effect_obj in obj_names:
+                            imported_object = context.scene.objects[imported_name]
+                        else:
+                            effect_obj = None
+
+                        attr = ef2.attrib
+
+                        if effect_obj is not None:
+                            attr['posX'] = str(effect_obj.location[0])
                             attr['posY'] = str(effect_obj.location[2])
-                            attr['posZ'] = str(-1*effect_obj.location[1]) 
-            anim = imported_bg_model.find('animKeyframes')
-            if anim is not None:
-                for tag in list(anim):
-                    for tag_name, delta in [('posX', posXDelta), ('posY', posYDelta), ('posZ', posZDelta), ('rotX', rotXDelta), ('rotY', rotYDelta), ('rotZ', rotZDelta), ('scaleX', scaleXDelta), ('scaleY', scaleYDelta), ('scaleZ', scaleZDelta)]:
-                        if tag.tag == tag_name:
-                            for keyframe in list(tag):
-                                if "scale" not in tag_name:
-                                    keyframe.attrib['value'] = str(float(keyframe.attrib['value']) + delta)
-                                else:
-                                    keyframe.attrib['value'] = str(float(keyframe.attrib['value']) * delta)
-                            break
+                            attr['posZ'] = str(-1*effect_obj.location[1])
 
-            dest_root.append(imported_bg_model)
+        anim = imported_bg_model.find('animKeyframes')
+
+        # For updating all animation keyframes for imported object previews
+        if anim is not None and imported_object is not None:
+            # For imported objects, determine how much the object has moved from its original position, so this change
+            # can be applied to animation keyframes.
+            pos_delta = current_bg_pos - orig_pos
+            rot_delta = current_bg_rot - orig_rot
+            scale_delta = Vector((current_bg_scale[0]/orig_scale[0],
+                                  current_bg_scale[1]/orig_scale[1],
+                                  current_bg_scale[2]/orig_scale[2]))
+
+            for tag in list(anim):
+                for tag_name, delta in [('posX', pos_delta[0]), ('posY', pos_delta[1]), ('posZ', pos_delta[2]),
+                                        ('rotX', rot_delta[0]), ('rotY', rot_delta[1]), ('rotZ', rot_delta[2]),
+                                        ('scaleX', scale_delta[0]), ('scaleY', scale_delta[1]), ('scaleZ', scale_delta[2])]:
+                    if tag.tag == tag_name:
+                        for keyframe in list(tag):
+                            if "pos" in tag_name:
+                                keyframe.attrib['value'] = str(float(keyframe.attrib['value']))
+                            elif "rot" in tag_name:
+                                keyframe.attrib['value'] = str(float(keyframe.attrib['value']) + delta)
+                            elif "scale" in tag_name:
+                                keyframe.attrib['value'] = str(float(keyframe.attrib['value']) * delta)
+                        break
+
+        dest_root.append(imported_bg_model)
 
 # Operator for exporting the stage config as a .XML file
 class OBJECT_OT_generate_config(bpy.types.Operator):
@@ -1384,7 +1457,6 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
                                         begin_keyframe_exists = True
                                         break
                         else: continue
-                        break
 
                     # Remove the beginning keyframe if it didn't exist prior to it being added
                     if not begin_keyframe_exists:
@@ -1437,14 +1509,13 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
 
                 # Generate elements for listed descriptors (except IGs)
                 for desc in descriptors.descriptors:
-                    if desc.get_object_name() in child.name and not "[IG]" in child.name:
+                    if desc.get_object_name() in child.name and "[IG]" not in child.name:
                         match_descriptor = True
                         desc.generate_xml(xig, child)
                         break
                 
                 # Object is not a listed descriptor
-                if match_descriptor == False:
-                    if child.data != None:
+                if not match_descriptor and child.data is not None:
                         descriptor_model_stage.DescriptorModel.generate_xml(xig, child)
 
 
@@ -1453,7 +1524,7 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
         # Import background and foreground objects from a .XML file, if it exists
         bg_path = bpy.path.abspath(context.scene.background_import_path)
         obj_names = [obj.name for obj in context.scene.objects]
-        if (os.path.exists(bg_path)):
+        if os.path.exists(bg_path):
             bg = etree.parse(bg_path)
             bg_root = bg.getroot()
 
@@ -1482,7 +1553,7 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
 
         return {'FINISHED'}
 
-# Fucntion for updating the properties of an active object
+# Function for updating the properties of an active object
 def update_prop(self, context, prop):
     if context.active_object is not None:
         prop_value = getattr(self, prop)
