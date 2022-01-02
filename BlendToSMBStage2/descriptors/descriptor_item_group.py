@@ -98,7 +98,16 @@ class DescriptorIG(DescriptorBase):
 
     @staticmethod
     def render(obj):
-        draw_grid = bpy.context.scene.draw_collision_grid
+        draw_grids_global = bpy.context.scene.draw_collision_grid
+        draw_only_active_grids = bpy.context.scene.draw_only_active_collision_grid
+        is_active = (bpy.context.active_object is not None) and (bpy.context.active_object == obj or bpy.context.active_object in obj.children)
+
+        if draw_only_active_grids:
+            draw_grid = (draw_grids_global and is_active)
+
+        else:
+            draw_grid = draw_grids_global
+
         stage_object_drawing.draw_ig(obj, draw_grid) 
         if obj.get("loopAnim") == 2:
             stage_object_drawing.draw_seesaw_axis(obj)

@@ -306,6 +306,13 @@ def register():
             description="Whether or not to draw a visual representation of collision grids",
             default=True,
     )
+
+    bpy.types.Scene.draw_only_active_collision_grid = bpy.props.BoolProperty(
+            name="Draw Only Active Collision Grids",
+            description="Whether or not to only draw a visual representation of the active, selected collision grid",
+            default=True,
+    )
+
     bpy.types.Scene.auto_path_names = bpy.props.BoolProperty(
             name="Automatic Path Names",
             default = False,

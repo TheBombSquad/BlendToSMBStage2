@@ -382,6 +382,7 @@ class VIEW3D_PT_5_settings(bpy.types.Panel):
         layout.prop(context.scene, "draw_stage_objects")
         layout.prop(context.scene, "draw_falloutProp")
         layout.prop(context.scene, "draw_collision_grid")
+        layout.prop(context.scene, "draw_only_active_collision_grid")
         layout.prop(context.scene, "optimize_keyframes")
 
 # Operator for toggling the drawing of stage objects
