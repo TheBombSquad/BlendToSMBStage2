@@ -148,6 +148,94 @@ class OBJECT_OT_create_new_empty_and_select(bpy.types.Operator):
         updateUIProps(newEmpty)
         return {'FINISHED'}
 
+# Operator for subdividing a collision grid
+class OBJECT_OT_collision_grid_subdivide(bpy.types.Operator):
+    bl_idname = "object.collision_grid_subdivide"
+    bl_label = "Subdivide Collision Grid"
+    bl_description = "Subdivides the collision grid for an item group."
+    bl_options = {'UNDO'}
+
+    unsubdivide: bpy.props.BoolProperty(default=False)
+
+    def execute(self, context):
+        obj = bpy.context.active_object
+
+        if "collisionStartX" in obj.keys():
+            if not self.unsubdivide:
+                obj["collisionStepX"] /= 2
+                obj["collisionStepY"] /= 2
+                obj["collisionStepCountX"] *= 2
+                obj["collisionStepCountY"] *= 2
+            elif self.unsubdivide and (obj["collisionStepCountX"] > 1 and obj["collisionStepCountY"] > 1):
+                obj["collisionStepX"] *= 2
+                obj["collisionStepY"] *= 2
+                obj["collisionStepCountX"] //= 2
+                obj["collisionStepCountY"] //= 2
+
+        # Update visual property preview TODO: Don't rely on this having to be implemented manually
+        obj.item_group_properties.collisionStepX = obj["collisionStepX"]
+        obj.item_group_properties.collisionStepY = obj["collisionStepY"]
+        obj.item_group_properties.collisionStepCountX = obj["collisionStepCountX"]
+        obj.item_group_properties.collisionStepCountY = obj["collisionStepCountY"]
+
+        return {'FINISHED'}
+
+# Operator for fitting a collision grid to geometry
+class OBJECT_OT_collision_grid_fit(bpy.types.Operator):
+    bl_idname = "object.collision_grid_fit"
+    bl_label = "Fit Collision Grid"
+    bl_description = "Fits the collision grid for an item group to the geometry of its models. Does not adjust step count, use the subdivision tool to assign the step count as per the complexity."
+    bl_options = {'UNDO'}
+
+    def execute(self, context):
+        active_obj = bpy.context.active_object
+
+        total_max_x = None
+        total_min_x = None
+        total_max_y = None
+        total_min_y = None
+
+        # Get the min/max X/Y worldspace coordinates for the vertices of the IG and its children
+        obj_check_list = [active_obj, *active_obj.children]
+        for obj in obj_check_list:
+            if obj.data is None: continue
+
+            bm = bmesh.new()
+            bm.from_mesh(obj.data)
+
+            obj_world_mtx = obj.matrix_world
+            obj_world_verts = [(obj_world_mtx @ vert.co) for vert in bm.verts]
+            obj_x_verts = [vert[0] for vert in obj_world_verts]
+            obj_y_verts = [vert[1] for vert in obj_world_verts]
+
+            max_x = max(obj_x_verts)
+            min_x = min(obj_x_verts)
+            max_y = max(obj_y_verts)
+            min_y = min(obj_y_verts)
+
+            if (total_max_x is None) or (max_x > total_max_x): total_max_x = max_x
+            if (total_min_x is None) or (min_x < total_min_x): total_min_x = min_x
+            if (total_max_y is None) or (max_y > total_max_y): total_max_y = max_y
+            if (total_min_y is None) or (min_y < total_min_y): total_min_y = min_y
+
+            bm.free()
+
+        dimensions = Vector(((total_max_x-total_min_x), (total_max_y-total_min_y)))
+
+        active_obj["collisionStartX"] = total_min_x - (dimensions.x*0.1)
+        active_obj["collisionStartY"] = -1*(total_max_y + (dimensions.y*0.1))   # Adjust for SMB coordinate system
+        active_obj["collisionStepX"] = (dimensions.x*1.2) / active_obj["collisionStepCountX"]
+        active_obj["collisionStepY"] = (dimensions.y*1.2) / active_obj["collisionStepCountY"]
+
+        # Update visual property preview TODO: Don't rely on this having to be implemented manually
+        active_obj.item_group_properties.collisionStartX = active_obj["collisionStartX"]
+        active_obj.item_group_properties.collisionStartY = active_obj["collisionStartY"]
+        active_obj.item_group_properties.collisionStepX = active_obj["collisionStepX"]
+        active_obj.item_group_properties.collisionStepY = active_obj["collisionStepY"]
+
+
+        return {'FINISHED'}
+
 # UI panel for group creation 
 class VIEW3D_PT_1_item_group_panel(bpy.types.Panel):
     bl_idname = "VIEW3D_PT_1_item_group_panel"
@@ -278,7 +366,6 @@ class VIEW3D_PT_3_active_object_panel(bpy.types.Panel):
             properties.label(text=obj.name)
 
             # Various conversion options
-
             if '[PATH]' not in obj.name:
                 convert_ig = properties.operator("object.convert_selected", text="Convert to Item Group")
                 convert_ig.prefix = "[IG]"
@@ -300,6 +387,14 @@ class VIEW3D_PT_3_active_object_panel(bpy.types.Panel):
 
                 if '[START]' in obj.name:
                     make_cpu_starts = properties.operator("object.generate_cpu_starts", text="Make CPU Starts from Selected")
+
+                if '[IG]' in obj.name:
+                    properties.label(text="Collision Grid Properties")
+                    subdivide_grid = properties.operator("object.collision_grid_subdivide", text="Subdivide Collision Grid")
+                    subdivide_grid.unsubdivide = False
+                    unsubdivide_grid = properties.operator("object.collision_grid_subdivide", text="Un-subdivide Collision Grid")
+                    unsubdivide_grid.unsubdivide = True
+                    fit_grid = properties.operator("object.collision_grid_fit", text="Fit Collision Grid")
 
             if '[PATH]' in obj.name:
                 make_cpu_paths = properties.operator("object.generate_cpu_paths", text="Make CPU Paths from Selected")
@@ -733,6 +828,7 @@ class OBJECT_OT_generate_cpu_starts(bpy.types.Operator):
             copies = copies+1
 
         return {'FINISHED'}
+
 
 # Operator for setting backface culling on all materials of all objects
 class OBJECT_OT_set_backface_culling(bpy.types.Operator):

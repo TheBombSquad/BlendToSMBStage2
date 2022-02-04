@@ -186,7 +186,7 @@ def load_handler(dummy):
 def update_preset(self, context, prop, flag):
     name = getattr(self, prop)
 
-    if name is not "":
+    if name != "":
         if f"[{flag}_" in self.name:
             self.name = re.sub(fr"(?<={flag}_)[^\]]*", name, self.name)
         else:
