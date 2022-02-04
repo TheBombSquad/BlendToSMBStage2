@@ -148,6 +148,34 @@ class OBJECT_OT_create_new_empty_and_select(bpy.types.Operator):
         updateUIProps(newEmpty)
         return {'FINISHED'}
 
+# Operator for duplicating collision grid data
+class OBJECT_OT_collision_grid_duplicate(bpy.types.Operator):
+    bl_idname = "object.collision_grid_duplicate"
+    bl_label = "Copy Collision Grid to All Selected"
+    bl_description = "Applies the collision grid dimensions of the active item group to all selected item groups."
+    bl_options = {'UNDO'}
+
+    def execute(self, context):
+        active_ig = bpy.context.active_object
+        for obj in [ig for ig in ((obj if ("[IG]" in obj.name) else None) for obj in bpy.context.selected_objects) if ig]:
+            obj["collisionStartX"] = active_ig["collisionStartX"]
+            obj["collisionStartY"] = active_ig["collisionStartY"]
+            obj["collisionStepX"] = active_ig["collisionStepX"] 
+            obj["collisionStepY"] = active_ig["collisionStepY"]
+            obj["collisionStepCountX"] = active_ig["collisionStepCountX"]
+            obj["collisionStepCountY"] = active_ig["collisionStepCountY"]
+
+            # Update visual property preview TODO: Don't rely on this having to be implemented manually
+            obj.item_group_properties.collisionStartX = obj["collisionStartX"]
+            obj.item_group_properties.collisionStartY = obj["collisionStartY"]
+            obj.item_group_properties.collisionStepX = obj["collisionStepX"]
+            obj.item_group_properties.collisionStepY = obj["collisionStepY"]
+            obj.item_group_properties.collisionStepCountX = obj["collisionStepCountX"]
+            obj.item_group_properties.collisionStepCountY = obj["collisionStepCountY"]
+            
+        return {'FINISHED'}
+
+
 # Operator for subdividing a collision grid
 class OBJECT_OT_collision_grid_subdivide(bpy.types.Operator):
     bl_idname = "object.collision_grid_subdivide"
@@ -395,6 +423,7 @@ class VIEW3D_PT_3_active_object_panel(bpy.types.Panel):
                     unsubdivide_grid = properties.operator("object.collision_grid_subdivide", text="Un-subdivide Collision Grid")
                     unsubdivide_grid.unsubdivide = True
                     fit_grid = properties.operator("object.collision_grid_fit", text="Fit Collision Grid")
+                    duplicate_grid = properties.operator("object.collision_grid_duplicate", text="Copy Collision Grid to All Selected")
 
             if '[PATH]' in obj.name:
                 make_cpu_paths = properties.operator("object.generate_cpu_paths", text="Make CPU Paths from Selected")
