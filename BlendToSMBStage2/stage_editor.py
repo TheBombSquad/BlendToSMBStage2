@@ -172,7 +172,7 @@ class OBJECT_OT_collision_grid_duplicate(bpy.types.Operator):
             obj.item_group_properties.collisionStepY = obj["collisionStepY"]
             obj.item_group_properties.collisionStepCountX = obj["collisionStepCountX"]
             obj.item_group_properties.collisionStepCountY = obj["collisionStepCountY"]
-            
+
         return {'FINISHED'}
 
 
@@ -590,6 +590,11 @@ class MATERIAL_PT_blend2smb_material(bpy.types.Panel):
         ia4 = ia_tex_row.operator("material.set_material_flags", text="IA4")
         ia4.name = "IA4"
         ia4.flag = "TEX"
+
+        layout.label(text="Texture Flags")
+        scroll = layout.operator("material.set_material_flags", text="Texture Scroll")
+        scroll.name = "SCROLL"
+        scroll.flag = "MATFLAG"
 
 # Operator for marking a material as unshaded
 class MATERIAL_OT_mark_unshaded(bpy.types.Operator):
