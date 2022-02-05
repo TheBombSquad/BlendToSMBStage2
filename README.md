@@ -119,7 +119,9 @@ Texture scroll is relatively easy to implement. Just set U (horizontal) and V
 (vertical) scroll speed for an item groups, a background object, or a foreground
 object. The speed of the texture scroll is dependent on the item group or
 background/foreground model. The location of the scrolling texture is dependent
-on the material. After exporting, you can mark one or more materials for
+on the material. You can mark the material(s) you wish to have scroll using the
+'Texture Scroll' option under the Blend2SMB section of the material properties.
+You can also modify it manually, to do this, you can mark one or more materials for
 texture scroll in GxModelViewer by changing the material flag for each material
 in a mesh. You'll need to add `00020000` to the material flag of the material you
 wish to apply texture scroll to. So, for example, if the default material
@@ -129,8 +131,15 @@ apply texture scroll to. This allows you to have an item group that has both
 scrolling and non-scrolling textures.
 
 ## Known Bugs
-There are some bugs present that I'm not quite sure how to fix yet. 
-* Fallout plane height is not transferred from old Blend files, and will 
+There are some bugs that are known, these will hopefully be fixed in the future. 
+
+* Export may fail occasionally on certain systems where the system language is not
+English.
+* Transparency may be incorrectly applied to certain materials, this may also
+be isolated to systems where the default language is not English.
+* Rotating background objects will not properly apply the transform to all of the
+keyframes of a background object's animation. 
+* Fallout plane height is not transferred from very old (<2.80) Blend files, and will 
 default to -10.
 * Stage objects do not automatically draw on file load. You need to press
 the "Draw Stage Objects" button to make them show up.
