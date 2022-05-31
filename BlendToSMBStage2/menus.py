@@ -53,7 +53,6 @@ class VIEW3D_OT_cube_project_smb_checker(bpy.types.Operator):
         
         #find scale factor
         scale_factor = bpy.context.active_object.active_material.node_tree.nodes.get("Image Texture").image.size[0]
-        print(scale_factor)
         
         bpy.ops.uv.cube_project(
             cube_size=1.0*256.0/scale_factor,
