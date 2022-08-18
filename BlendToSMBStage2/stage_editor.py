@@ -1431,7 +1431,7 @@ def append_imported_bg_objects(self, context, bg_root, dest_root, obj_names):
                         if imported_name in obj_names:
                             effect_obj = context.scene.objects[imported_name]
                         else:
-                            effect_obj= None
+                            effect_obj = None
 
                         attr = ef1.attrib
 
@@ -1447,8 +1447,8 @@ def append_imported_bg_objects(self, context, bg_root, dest_root, obj_names):
                     for j, ef2 in enumerate(list(effect)):
                         imported_name = "[EXT_IMPORTED_FX:" + name.text + ":" + str(index) + ":" + str(j) + "]"
 
-                        if effect_obj in obj_names:
-                            imported_object = context.scene.objects[imported_name]
+                        if imported_name in obj_names:
+                            effect_obj = context.scene.objects[imported_name]
                         else:
                             effect_obj = None
 
