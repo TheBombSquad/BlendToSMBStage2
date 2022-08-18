@@ -428,6 +428,7 @@ class VIEW3D_PT_3_active_object_panel(bpy.types.Panel):
             if '[PATH]' in obj.name:
                 make_cpu_paths = properties.operator("object.generate_cpu_paths", text="Make CPU Paths from Selected")
 
+            properties.operator("object.drop_selected_objects", text="Drop Selected Objects")
             properties.separator()
             
         # Fancy UI properties
@@ -863,6 +864,33 @@ class OBJECT_OT_generate_cpu_starts(bpy.types.Operator):
 
         return {'FINISHED'}
 
+class OBJECT_OT_drop_selected_objects(bpy.types.Operator):
+    bl_idname = "object.drop_selected_objects"
+    bl_label = "Drop Selected Objects"
+    bl_description = "Drops the selected objects to a location 0.5 units above the nearest surface below the object."
+    bl_options = {"UNDO"}
+
+    def execute(self, context):
+        for object in [obj for obj in context.selected_objects]:
+            cast = context.scene.ray_cast(context.view_layer.depsgraph, object.location, Vector((0,0,-1)), distance=1000)
+            if cast[0]:
+                height = 0.0 
+
+                if "[BANANA_S]" in object.name: 
+                    height = 0.5
+                elif "[BANANA_B]" in object.name:
+                    height = 1.0 
+                elif "[SPHERE_COL]" in object.name:
+                    height = object.scale.x
+
+                normal = cast[2]
+                object.location = cast[1]
+                object.location = object.location + normal*height
+
+                face_rotation = Vector.to_track_quat(normal, 'Z')
+                object.rotation_euler = face_rotation.to_euler()
+
+        return {'FINISHED'}
 
 # Operator for setting backface culling on all materials of all objects
 class OBJECT_OT_set_backface_culling(bpy.types.Operator):
