@@ -428,6 +428,7 @@ class VIEW3D_PT_3_active_object_panel(bpy.types.Panel):
             if '[PATH]' in obj.name:
                 make_cpu_paths = properties.operator("object.generate_cpu_paths", text="Make CPU Paths from Selected")
 
+            properties.operator("object.drop_selected_objects", text="Drop Selected Objects")
             properties.separator()
             
         # Fancy UI properties
@@ -863,6 +864,33 @@ class OBJECT_OT_generate_cpu_starts(bpy.types.Operator):
 
         return {'FINISHED'}
 
+class OBJECT_OT_drop_selected_objects(bpy.types.Operator):
+    bl_idname = "object.drop_selected_objects"
+    bl_label = "Drop Selected Objects"
+    bl_description = "Drops the selected objects to a location 0.5 units above the nearest surface below the object."
+    bl_options = {"UNDO"}
+
+    def execute(self, context):
+        for object in [obj for obj in context.selected_objects]:
+            cast = context.scene.ray_cast(context.view_layer.depsgraph, object.location, Vector((0,0,-1)), distance=1000)
+            if cast[0]:
+                height = 0.0 
+
+                if "[BANANA_S]" in object.name: 
+                    height = 0.5
+                elif "[BANANA_B]" in object.name:
+                    height = 1.0 
+                elif "[SPHERE_COL]" in object.name:
+                    height = object.scale.x
+
+                normal = cast[2]
+                object.location = cast[1]
+                object.location = object.location + normal*height
+
+                face_rotation = Vector.to_track_quat(normal, 'Z')
+                object.rotation_euler = face_rotation.to_euler()
+
+        return {'FINISHED'}
 
 # Operator for setting backface culling on all materials of all objects
 class OBJECT_OT_set_backface_culling(bpy.types.Operator):
@@ -1179,6 +1207,7 @@ class OBJECT_OT_export_stagedef(bpy.types.Operator):
     bl_options = {'UNDO'} 
 
     compressed: bpy.props.BoolProperty(default=True)
+
     def execute(self, context):
         bpy.ops.object.export_obj("INVOKE_DEFAULT")
         bpy.ops.object.generate_config("INVOKE_DEFAULT")
@@ -1430,7 +1459,7 @@ def append_imported_bg_objects(self, context, bg_root, dest_root, obj_names):
                         if imported_name in obj_names:
                             effect_obj = context.scene.objects[imported_name]
                         else:
-                            effect_obj= None
+                            effect_obj = None
 
                         attr = ef1.attrib
 
@@ -1446,8 +1475,8 @@ def append_imported_bg_objects(self, context, bg_root, dest_root, obj_names):
                     for j, ef2 in enumerate(list(effect)):
                         imported_name = "[EXT_IMPORTED_FX:" + name.text + ":" + str(index) + ":" + str(j) + "]"
 
-                        if effect_obj in obj_names:
-                            imported_object = context.scene.objects[imported_name]
+                        if imported_name in obj_names:
+                            effect_obj = context.scene.objects[imported_name]
                         else:
                             effect_obj = None
 
@@ -1561,43 +1590,56 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
         begin_frame = context.scene.frame_start
 
         # Marks objects that don't have keyframes on frame 0, so they can be removed later
-        remove_beginframe_objs = []
+        first_frame_added_objs = []
+
+        # Curve types for f-curve iteration
+        curve_types = ["location", "rotation_euler", "scale"]
+
+        all_curve_types = []
+        for ct in curve_types:
+            for i in [0, 1, 2]:
+                all_curve_types.append((i, ct))
 
         # Iterate over all top-level objects
         for obj in [obj for obj in bpy.context.scene.objects if (obj.type == 'EMPTY' or obj.type == 'MESH' or obj.type == 'CURVE')]:
 
             # Add first keyframe to IGs, BGs, and FGs
             # Also add IGs to the IG list
-            if any(needsframe in obj.name for needsframe in ["[IG]", "[BG]", "[FG]"]): 
-                if "[IG]" in obj.name: igs.append(obj)
+            if any(animatable in obj.name for animatable in ["[IG]", "[BG]", "[FG]"]): 
                 context.scene.frame_set(begin_frame)
+
+                if "[IG]" in obj.name: igs.append(obj)
 
                 # Semi-hacky way to get the object's center of rotation to work properly
                 # B2SMB1 inadvertently fixed this by baking *all* keyframes
                 # This is fixed by adding an initial keyframe on every curve
                 # This also fixes weirdness with background and foreground objects
-                begin_keyframe_exists = False
                 if obj.animation_data is not None and obj.animation_data.action is not None:
+                    first_keyframe_exists = False
+                    existing_channels = []
                     fcurves = obj.animation_data.action.fcurves
-                    for index in [0, 1, 2]:
-                        for curve_type in ["location", "rotation_euler", "scale"]:
-                            fcurve = fcurves.find(curve_type, index=index)
-                            if fcurve is not None:
-                                for keyframe_index in range(len(fcurve.keyframe_points)):
-                                    if fcurve.keyframe_points[keyframe_index].co[0] == float(begin_frame):
-                                        begin_keyframe_exists = True
-                                        break
-                        else: continue
 
-                    # Remove the beginning keyframe if it didn't exist prior to it being added
-                    if not begin_keyframe_exists:
-                        remove_beginframe_objs.append(obj)
+                    # Find existing channels with frame 0 keyframes
+                    for (index, curve_type) in all_curve_types:
+                        fcurve = fcurves.find(curve_type, index=index)
+                        if fcurve is not None:
+                            for keyframe_index in range(len(fcurve.keyframe_points)):
+                                if fcurve.keyframe_points[keyframe_index].co[0] == float(begin_frame):
+                                    existing_channels.append((index, curve_type))
+                                    # print(f"Added existing channel {curve_type}[{index}]")
+                                    break
+
+                    # If not all of the channels have frame 0 keyframes, we need to add frame 0 keyframes on those channels
+                    if len(existing_channels) != 9:
+                        first_frame_added_objs.append((obj, existing_channels))
+                   
+                    # We just add frame 0 keyframes on all needed channels, and use existing_chanenls to find out what needs to be removed after export
+                    for curve_type in curve_types:
+                        obj.keyframe_insert(curve_type, frame=begin_frame, options = {'INSERTKEY_NEEDED'})
 
                     print("\tInserted frame zero keyframe for item group " + obj.name)
-                    obj.keyframe_insert("location", frame=begin_frame, options = {'INSERTKEY_NEEDED'})
-                    obj.keyframe_insert("rotation_euler", frame=begin_frame, options = {'INSERTKEY_NEEDED'})
-                    obj.keyframe_insert("scale", frame=begin_frame, options = {'INSERTKEY_NEEDED'})
                 
+                # Generate XML elements for BG and FG objects
                 if "[IG]" not in obj.name:
                     for desc in descriptors.descriptors_root:
                         match_descriptor = False
@@ -1606,6 +1648,7 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
                             desc.generate_xml(root, obj)
                             continue
 
+            # Handle non-animated BG/FG objects
             else:
                 # Non-item groups (start, BG/FG objects, etc)
                 for desc in descriptors.descriptors_root:
@@ -1675,12 +1718,12 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
         config_file.close()
         print("Finished generating config")
 
-        # Remove the beginning keyframe if it didn't exist prior to it being added
-        for obj in remove_beginframe_objs:
-            print("Deleted frame zero keyframe for item group " + obj.name)
-            obj.keyframe_delete("location", frame=begin_frame)
-            obj.keyframe_delete("rotation_euler", frame=begin_frame)
-            obj.keyframe_delete("scale", frame=begin_frame)
+        # Remove the beginning keyframe channel if it didn't exist prior to it being added
+        for (obj, obj_existing_channels) in first_frame_added_objs:
+            for (idx, curve_type) in all_curve_types:
+                if (idx, curve_type) in obj_existing_channels: continue 
+                print(f"Deleted frame zero channel {curve_type}[{idx}] for item group {obj.name}")
+                obj.keyframe_delete(curve_type, index=idx, frame=begin_frame)
 
         return {'FINISHED'}
 
