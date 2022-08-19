@@ -6,18 +6,20 @@ files usable by the custom level tools [SMB Workshop 2](https://gitlab.com/Craft
 and [GxUtils](https://github.com/TheBombSquad/GxUtils). This plugin is a port of CraftedCart's 
 Blend2SMBStage plugin for Blender 2.7x to the latest version of Blender, with support for new 
 Workshop 2 functionality not found in previous versions, along with other usability improvements. 
-The original version  of the plugin can be found [here.](https://gitlab.com/CraftedCart/BlendToSMBStage)
+The original version of the plugin can be found [here.](https://gitlab.com/CraftedCart/BlendToSMBStage)
 
-The latest version of SMB Workshop 2 is highly recommended, and can be downloaded [here.](https://craftedcart.gitlab.io/ws2web/#/download)
+The latest version of CraftedCart's SMB Workshop 2 is included, but can be separately downloaded [here.](https://craftedcart.gitlab.io/ws2web/#/download)
 
 A guide to the usage of this tool, along with documentation in regards to Monkey Ball modding as a whole, can be found [here.](https://docs.google.com/document/d/194QZxrimkjHEzSSMKbafs86PnmiYmFBZUnoaEnks4es/edit)
 
 ## Setup
-To download the plugin, [click here to get the latest list of releases,](https://github.com/TheBombSquad/BlendToSMBStage2/releases), then download the latest .ZIP file. You don't need to extract the files in the downloaded .zip file. Open Blender 2.80, and go to Edit-\>Preferences in the menu bar. Go to the 'Add-ons' tab, and select 'Install...'. Navigate to, and select the downloaded .zip file. Search for "BlendToSMBStage2" in the Add-ons list, and then tick the checkmark next to the addon. The add-on will then be installed. You can access the stage object functionality through the 'Blend2SMB' tab on the right of the 3D viewport. If you can't see it, click the grey `+` icon in the top right of the 3D viewport.
+To download the plugin, [click here to get the latest list of releases](https://github.com/TheBombSquad/BlendToSMBStage2/releases), then download the latest .ZIP file. You don't need to extract the files in the downloaded .zip file. Open Blender (any version later than 2.80), and go to Edit-\>Preferences in the menu bar. Go to the 'Add-ons' tab, and select 'Install...'. Navigate to, and select the downloaded .zip file. Search for "BlendToSMBStage2" in the Add-ons list, and then tick the checkmark next to the addon. The add-on will then be installed. You can access the stage object functionality through the 'Blend2SMB' tab on the right of the 3D viewport. If you can't see it, click the grey `+` icon in the top right of the 3D viewport.
+
+If you are running on a Linux-based operating system, you may need to give executable permissions to ws2lzfrontend and GxModelViewer, located in the plugin's folder. The plugin may be installed in the `.config/blender/3.2/scripts/addons/BlendToSMBStage2` folder in your home directory, where `3.2` is your version of Blender.
 
 If you want to import an old Blend file from 2.79 or earlier, you will need to convert the file to Cycles in order to get materials to show up properly. You can use the plugin 'Material Utils Special' in 2.79 to achieve this. This is an add-on that can be installed in a default installation of 2.79. You can go to File-\>User Preferences and locate it in the Add-ons tab. If this process is not done, you'll need to re-assign textures to your stage.
 
-[Here is a script you can paste into the text editor](https://github.com/TheBombSquad/batch-convert-to-cycles/blob/master/batch_convert_to_cycles.py) that takes a folder as input, and converts all of the Blend files in the folder to ones compatible with 2.8. This script uses the 'Material Utils Special' plugin, and it needs to be enabled before running the script. You can modify the folder that is to be used in the text editor. 
+[For versions of Blender 2.79 or earlier, linked is a script you can paste into the text editor](https://github.com/TheBombSquad/batch-convert-to-cycles/blob/master/batch_convert_to_cycles.py) that takes a folder as input, and converts all of the Blend files in the folder to ones compatible with 2.8. This script uses the 'Material Utils Special' plugin, and it needs to be enabled before running the script. You can modify the folder that is to be used in the text editor. 
 
 ## Changes
 ### Change List
