@@ -47,10 +47,11 @@ class VIEW3D_OT_checker_FAQ(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
     odd: bpy.props.BoolProperty(name = "Odd?", default=True)
     pix_checker_size: bpy.props.IntProperty(name = "Checker Size", default=64)
+    faqtype: bpy.props.EnumProperty(items=[("EVEN","Even","Space all UVs evenly."),("LENGTH","Length","Average space UVs edge length of each loop."),("LENGTH_AVERAGE","Length Average","Average space UVs edge length of each loop.")],name = "Edge Length Mode", default="LENGTH_AVERAGE")
 
 
     def execute(self, context):
-        bpy.ops.uv.follow_active_quads()
+        bpy.ops.uv.follow_active_quads(mode=self.faqtype)
         
         #find checker size in uv units
         checker_size = 1.0/(bpy.context.active_object.active_material.node_tree.nodes.get("Image Texture").image.size[0]/(self.pix_checker_size))
@@ -147,10 +148,11 @@ class VIEW3D_OT_smart_FAQ(bpy.types.Operator):
     include_active: bpy.props.BoolProperty(name = "Include Active Face?", default=True)
     tile_number: bpy.props.FloatProperty(name = "Number of Tiles", default=8.0)
     axis: bpy.props.EnumProperty(items=[("uaxis","U Axis", "U Axis will be tiled"),("vaxis","V Axis", "V Axis will be tiled")], name="Tiling Axis", default="uaxis")
+    faqtype: bpy.props.EnumProperty(items=[("EVEN","Even","Space all UVs evenly."),("LENGTH","Length","Average space UVs edge length of each loop."),("LENGTH_AVERAGE","Length Average","Average space UVs edge length of each loop.")],name = "Edge Length Mode", default="LENGTH_AVERAGE")
 
 
     def execute(self, context):
-        bpy.ops.uv.follow_active_quads()
+        bpy.ops.uv.follow_active_quads(mode=self.faqtype)
         
         #first calculate all necessary vertex data
         active_obj = bpy.context.active_object        
