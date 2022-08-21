@@ -77,12 +77,14 @@ def addKeyframes(parent, selector, fcurve):
                 
                 keyframes[seconds] = value
 
+    bpy.context.scene.frame_set(0)
     prev_val = None
     
     # Iterates through the animation to add intermediate (non-explictly defined) keyframes
     for i in range(start_frame, end_frame+1, timestep):
+        bpy.context.scene.frame_set(i)
         seconds = round((i-start_frame)/bpy.context.scene.render.fps, bpy.context.scene.export_time_round)
-        val = round(current_fcurve.evaluate(i), bpy.context.scene.export_value_round)
+        val = round(selector(bpy.context.view_layer.objects.active), bpy.context.scene.export_value_round)
 
         if (optimize and (val == prev_val)):
             continue
