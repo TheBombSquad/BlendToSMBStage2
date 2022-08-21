@@ -1190,7 +1190,20 @@ class OBJECT_OT_export_gmatpl(bpy.types.Operator):
         args.append("-exportTpl")
         args.append(tpl_path)
 
-        gx_result = subprocess.run(args, capture_output=True)
+        if not os.path.exists(gx_path):
+            self.report({'ERROR'}, "GxModelViewer not found. Ensure you have downloaded BlendToSMBStage2 from the 'Releases' section on GitHub, not from the 'Code' dropdown.")
+            return {'CANCELLED'}
+
+        try:
+            gx_result = subprocess.run(args, capture_output=True)
+        except PermissionError:
+            self.report({'ERROR'}, f"GxModelViewer does not have the correct permissions to run. \nPlease set executable permissions on:\n{gx_path}")
+            return {'CANCELLED'}
+        except:
+            self.report({'ERROR'}, f"GxModelViewer failed to run. See the console for more details.")
+            return {'CANCELLED'}
+
+
         errors = [error for error in gx_result.stdout.decode().split('\r\n') if ("Import Warning" in error) or ("Error" in error)]
         if len(errors) > 0:
             self.report({'ERROR'}, "GxModelViewer warnings/errors occured: " + "\n".join(errors))
@@ -1220,6 +1233,10 @@ class OBJECT_OT_export_stagedef(bpy.types.Operator):
         else:
             ws_path = bpy.utils.script_path_user() + "/addons/BlendToSMBStage2/ws2lzfrontend/ws2lzfrontend.exe"
 
+        if not os.path.exists(ws_path):
+            self.report({'ERROR'}, "SMB Workshop 2 executable not found. Ensure you have downloaded BlendToSMBStage2 from the 'Releases' section on GitHub, not from the 'Code' dropdown.")
+            return {'CANCELLED'}
+
         command_args = [ws_path,
                         "-c" + config_path]
 
@@ -1228,7 +1245,15 @@ class OBJECT_OT_export_stagedef(bpy.types.Operator):
         else:
             command_args.append("-o" + raw_stagedef_path)
 
-        ws_result = subprocess.run(command_args, capture_output=True)
+        try:
+            ws_result = subprocess.run(command_args, capture_output=True)
+        except PermissionError:
+            self.report({'ERROR'}, f"SMB Workshop 2 does not have the correct permissions to run. \nPlease set executable permissions on:\n{ws_path}")
+            return {'CANCELLED'}
+        except:
+            self.report({'ERROR'}, f"SMB Workshop 2 failed to run. See the console for more details.")
+            return {'CANCELLED'}
+
         errors = [error for error in ws_result.stdout.decode().split('\n') if ("Critical" in error) or ("Error" in error) or ("Warning" in error)]
         if len(errors) > 0:
             self.report({'ERROR'}, "Workshop 2 warnings/errors occurred: " + "\n".join(errors))
