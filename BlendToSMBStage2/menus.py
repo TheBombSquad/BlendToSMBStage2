@@ -8,7 +8,7 @@ class VIEW3D_OT_cube_project_smb_checker(bpy.types.Operator):
     bl_label = "Cube Projection (Checkers) [b2smb]"
     
     bl_options = {'REGISTER', 'UNDO'}
-    checker_size: bpy.props.IntProperty(name = "2x2 Checker Size (px)", default=128, min=1)
+    checker_size: bpy.props.IntProperty(name = "2x2 Checker Size", default=128, min=1)
 
     def execute(self, context):
         old_cursor_loc = bpy.context.scene.cursor.location.copy()
@@ -47,7 +47,7 @@ class VIEW3D_OT_checker_FAQ(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     odd: bpy.props.BoolProperty(name = "Odd # of Checkers", default=True)
-    pix_checker_size: bpy.props.IntProperty(name = "2x2 Checker Size (px)", default=128, min=1)
+    pix_checker_size: bpy.props.IntProperty(name = "2x2 Checker Size", default=128, min=1)
     faqtype: bpy.props.EnumProperty(items=[("EVEN","Even","Space all UVs evenly."),
                                            ("LENGTH","Length","Average space UVs edge length of each loop."),
                                            ("LENGTH_AVERAGE","Length Average","Average space UVs edge length of each loop.")],
