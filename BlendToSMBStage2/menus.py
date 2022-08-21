@@ -8,7 +8,7 @@ class VIEW3D_OT_cube_project_smb_checker(bpy.types.Operator):
     bl_label = "Cube Projection (Checkers) [b2smb]"
     
     bl_options = {'REGISTER', 'UNDO'}
-    checker_size: bpy.props.IntProperty(name = "2x2 Checker Size", default=128, min=1)
+    checker_size: bpy.props.IntProperty(name = "2x2 Checker Size (px)", default=128, min=1)
 
     def execute(self, context):
         old_cursor_loc = bpy.context.scene.cursor.location.copy()
@@ -47,12 +47,20 @@ class VIEW3D_OT_checker_FAQ(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     odd: bpy.props.BoolProperty(name = "Odd # of Checkers", default=True)
-    pix_checker_size: bpy.props.IntProperty(name = "2x2 Checker Size", default=128, min=1)
-    faqtype: bpy.props.EnumProperty(items=[("EVEN","Even","Space all UVs evenly."),("LENGTH","Length","Average space UVs edge length of each loop."),("LENGTH_AVERAGE","Length Average","Average space UVs edge length of each loop.")],name = "Edge Length Mode", default="LENGTH_AVERAGE")
+    pix_checker_size: bpy.props.IntProperty(name = "2x2 Checker Size (px)", default=128, min=1)
+    faqtype: bpy.props.EnumProperty(items=[("EVEN","Even","Space all UVs evenly."),
+                                           ("LENGTH","Length","Average space UVs edge length of each loop."),
+                                           ("LENGTH_AVERAGE","Length Average","Average space UVs edge length of each loop.")],
+                                    name = "Edge Length Mode",
+                                    default="LENGTH_AVERAGE")
 
     def execute(self, context):
-        bpy.ops.uv.follow_active_quads(mode=self.faqtype)
-        
+        try:
+            bpy.ops.uv.follow_active_quads(mode=self.faqtype)
+        except:
+            self.report({'ERROR'}, "Could not run 'Follow Active Quads', ensure at least one face is selected")
+            return {"CANCELLED"}
+
         # Find checker size in uv units
         checker_size = 1.0/(bpy.context.active_object.active_material.node_tree.nodes.get("Image Texture").image.size[0]/(self.pix_checker_size))
         
@@ -68,6 +76,10 @@ class VIEW3D_OT_checker_FAQ(bpy.types.Operator):
         selected_loops = []
         active_loops = []
         
+        if len(selected_faces) < 2:
+            self.report({'ERROR'}, "Only one face selected, ensure two or more faces are selected")
+            return {"CANCELLED"}
+
         for f in selected_faces:
             if f != active_face:
                 for l in f.loops:
@@ -142,13 +154,24 @@ class VIEW3D_OT_smart_FAQ(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
     include_active: bpy.props.BoolProperty(name = "Include Active Face?", default=True)
     tile_number: bpy.props.FloatProperty(name = "Number of Tiles", default=8.0)
-    axis: bpy.props.EnumProperty(items=[("uaxis","U Axis", "U Axis will be tiled"),("vaxis","V Axis", "V Axis will be tiled")], name="Tiling Axis", default="uaxis")
-    faqtype: bpy.props.EnumProperty(items=[("EVEN","Even","Space all UVs evenly."),("LENGTH","Length","Average space UVs edge length of each loop."),("LENGTH_AVERAGE","Length Average","Average space UVs edge length of each loop.")],name = "Edge Length Mode", default="LENGTH_AVERAGE")
+    axis: bpy.props.EnumProperty(items=[("uaxis","U Axis", "U Axis will be tiled"),
+                                        ("vaxis","V Axis", "V Axis will be tiled")],
+                                name="Tiling Axis", 
+                                default="uaxis")
 
+    faqtype: bpy.props.EnumProperty(items=[("EVEN","Even","Space all UVs evenly."),
+                                           ("LENGTH","Length","Average space UVs edge length of each loop."),
+                                           ("LENGTH_AVERAGE","Length Average","Average space UVs edge length of each loop.")],
+                                    name = "Edge Length Mode",
+                                    default="LENGTH_AVERAGE")
 
     def execute(self, context):
-        bpy.ops.uv.follow_active_quads(mode=self.faqtype)
-        
+        try:
+            bpy.ops.uv.follow_active_quads(mode=self.faqtype)
+        except:
+            self.report({'ERROR'}, "Could not run 'Follow Active Quads', ensure at least one face is selected")
+            return {"CANCELLED"}
+
         # First calculate all necessary vertex data
         active_obj = bpy.context.active_object        
         bm = bmesh.from_edit_mesh(active_obj.data)
@@ -161,6 +184,10 @@ class VIEW3D_OT_smart_FAQ(bpy.types.Operator):
         selected_loops = []
         active_loops = []
         
+        if len(selected_faces) < 2:
+            self.report({'ERROR'}, "Only one face selected, ensure two or more faces are selected")
+            return {"CANCELLED"}
+
         for f in selected_faces:
             if f != active_face:
                 for l in f.loops:
