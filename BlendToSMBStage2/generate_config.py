@@ -85,7 +85,6 @@ def addKeyframes(parent, selector, fcurve):
         bpy.context.scene.frame_set(i)
         seconds = round((i-start_frame)/bpy.context.scene.render.fps, bpy.context.scene.export_time_round)
         val = round(selector(bpy.context.view_layer.objects.active), bpy.context.scene.export_value_round)
-        current_fcurve = fcurve(bpy.context.view_layer.objects.active.animation_data.action)
 
         if (optimize and (val == prev_val)):
             continue
