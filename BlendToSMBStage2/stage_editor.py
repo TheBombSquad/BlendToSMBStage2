@@ -1694,10 +1694,12 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
         # Generate per-global-frame animation data
         start_frame = bpy.context.scene.frame_start
         end_frame = bpy.context.scene.frame_end
+        orig_frame = bpy.context.scene.frame_current
         for frame in range(start_frame, end_frame + 1):
             bpy.context.scene.frame_set(frame)
             for exp in itertools.chain(ig_export_datas, fg_export_datas, bg_export_datas):
                 generate_config.generate_per_frame_anim_data(exp.obj, exp.anim_data)
+        bpy.context.scene.frame_set(orig_frame)
 
         # Generate itemgroup XML
         for ig_exp in ig_export_datas:
