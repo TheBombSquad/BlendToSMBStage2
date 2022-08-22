@@ -14,8 +14,8 @@ else:
 class AnimData:
     class Channel:
         def __init__(self):
-            self.time_val_map = defaultdict({})
-            self.last_val = None
+            self.time_val_map: dict[float, float] = {}
+            self.prev_val: float | None = None
 
     def __init__(self):
         # float time -> float value
@@ -61,59 +61,6 @@ def generate_generic_obj_element(obj, obj_type, parent, *, position=False, rotat
 
 # Generates an XML keyframe list for the specified axis and fcurve type
 def addKeyframes(parent, selector, fcurve):
-    start_frame = bpy.context.scene.frame_start
-    end_frame = bpy.context.scene.frame_end
-    active = bpy.context.view_layer.objects.active
-    current_fcurve = fcurve(bpy.context.view_layer.objects.active.animation_data.action)
-    timestep = bpy.context.scene.export_timestep
-    optimize = bpy.context.scene.optimize_keyframes
-
-    # Sets up a custom animation loop time if one is specified 
-    if "animLoopTime" in active:
-        if active["animLoopTime"] != -1.0:
-            end_frame = start_frame + int(round(active["animLoopTime"]*60))-1
-
-    # Sets up custom per-object timestep if one is specified
-    if "exportTimestep" in active: 
-        if active["exportTimestep"] != -1:
-            timestep = bpy.context.view_layer.objects.active["exportTimestep"]
-
-    # Keyframe dict wherek keys are time in seconds and value are values
-    keyframes = {}
-
-    # Adds all explicitly defined keyframes to the keyframe list
-    if current_fcurve is not None:
-        for keyframe_point in current_fcurve.keyframe_points:
-            if start_frame <= keyframe_point.co[0] <= end_frame+1:
-                seconds = round(keyframe_point.co[0]/bpy.context.scene.render.fps, bpy.context.scene.export_time_round)
-
-                fcurve_type = current_fcurve.data_path
-                if fcurve_type == "rotation_euler":
-                    value = round(math.degrees(keyframe_point.co[1]), bpy.context.scene.export_value_round)
-                else:
-                    value = round(keyframe_point.co[1], bpy.context.scene.export_value_round)
-
-                if current_fcurve.array_index == 1 and fcurve_type != "scale": value = -1*value
-                
-                keyframes[seconds] = value
-
-    bpy.context.scene.frame_set(0)
-    prev_val = None
-    
-    # Iterates through the animation to add intermediate (non-explictly defined) keyframes
-    for i in range(start_frame, end_frame+1, timestep):
-        bpy.context.scene.frame_set(i)
-        seconds = round((i-start_frame)/bpy.context.scene.render.fps, bpy.context.scene.export_time_round)
-        val = round(selector(bpy.context.view_layer.objects.active), bpy.context.scene.export_value_round)
-
-        if (optimize and (val == prev_val)):
-            continue
-
-        else:
-            prev_val = val
-            if seconds not in keyframes:
-                keyframes[seconds] = val
-
     # Create sorted XML keyframe list
     for time in sorted(list(keyframes.keys())):
         val = keyframes[time]
@@ -124,53 +71,107 @@ def addKeyframes(parent, selector, fcurve):
         keyframe.set("easing", "LINEAR")
         parent.append(keyframe)
 
-def _write_fcurve_keyframe_values(anim_data: AnimData, fcurve):
-    pass
+def _write_fcurve_keyframe_values(obj, anim_channel: AnimData.Channel, fcurve):
+    start_frame = bpy.context.scene.frame_start
+    end_frame = bpy.context.scene.frame_end
 
-def _write_obj_prop_at_current_frame(anim_data: AnimData, ig_obj_prop):
-    pass
+    # Sets up a custom animation loop time if one is specified 
+    if "animLoopTime" in obj:
+        if obj["animLoopTime"] != -1.0:
+            end_frame = start_frame + int(round(obj["animLoopTime"]*60))-1
 
-def generate_keyframe_anim_data(ig_obj, ig_anim: AnimData):
-    fcurves = ig_obj.animation_data.action.fcurves
-    if fcurve := fcurves.find("location", index=0) is not None:
-        _write_fcurve_keyframe_values(ig_obj, ig_anim.pos_x_channel, fcurve)
-    if fcurve := fcurves.find("location", index=1) is not None:
-        _write_fcurve_keyframe_values(ig_obj, ig_anim.pos_y_channel, fcurve)
-    if fcurve := fcurves.find("location", index=2) is not None:
-        _write_fcurve_keyframe_values(ig_obj, ig_anim.pos_z_channel, fcurve)
-    if fcurve := fcurves.find("rotation_euler", index=0) is not None:
-        _write_fcurve_keyframe_values(ig_obj, ig_anim.rot_x_channel, fcurve)
-    if fcurve := fcurves.find("rotation_euler", index=1) is not None:
-        _write_fcurve_keyframe_values(ig_obj, ig_anim.rot_y_channel, fcurve)
-    if fcurve := fcurves.find("rotation_euler", index=2) is not None:
-        _write_fcurve_keyframe_values(ig_obj, ig_anim.rot_z_channel, fcurve)
-    if fcurve := fcurves.find("scale", index=0) is not None:
-        _write_fcurve_keyframe_values(ig_obj, ig_anim.scale_x_channel, fcurve)
-    if fcurve := fcurves.find("scale", index=1) is not None:
-        _write_fcurve_keyframe_values(ig_obj, ig_anim.scale_y_channel, fcurve)
-    if fcurve := fcurves.find("scale", index=2) is not None:
-        _write_fcurve_keyframe_values(ig_obj, ig_anim.scale_z_channel, fcurve)
+    # Adds all explicitly defined keyframes to the keyframe set
+    for keyframe_point in fcurve.keyframe_points:
+        if start_frame <= keyframe_point.co[0] <= end_frame+1:
+            seconds = round(keyframe_point.co[0]/bpy.context.scene.render.fps, bpy.context.scene.export_time_round)
 
-def generate_per_frame_anim_data(ig_obj, ig_anim: AnimData):
-    fcurves = ig_obj.animation_data.action.fcurves
+            fcurve_type = fcurve.data_path
+            if fcurve_type == "rotation_euler":
+                value = round(math.degrees(keyframe_point.co[1]), bpy.context.scene.export_value_round)
+            else:
+                value = round(keyframe_point.co[1], bpy.context.scene.export_value_round)
+
+            if fcurve.array_index == 1 and fcurve_type != "scale": value = -1*value
+            
+            anim_channel.time_val_map[seconds] = value
+
+def _write_obj_prop_at_current_frame(obj, anim_channel: AnimData.Channel, obj_prop):
+    start_frame = bpy.context.scene.frame_start
+    end_frame = bpy.context.scene.frame_end
+    timestep = bpy.context.scene.export_timestep
+    optimize = bpy.context.scene.optimize_keyframes
+
+    # Sets up a custom animation loop time if one is specified 
+    if "animLoopTime" in obj:
+        if obj["animLoopTime"] != -1.0:
+            end_frame = start_frame + int(round(obj["animLoopTime"]*60))-1
+
+    # Sets up custom per-object timestep if one is specified
+    if "exportTimestep" in obj: 
+        if obj["exportTimestep"] != -1:
+            timestep = bpy.context.view_layer.objects.active["exportTimestep"]
+
+    curr_frame = bpy.context.scene.frame_current
+    # Ignore out-of-range frames
+    if not (start_frame <= curr_frame <= end_frame and (curr_frame - start_frame) % timestep == 0):
+        return
+
+    seconds = round((curr_frame-start_frame)/bpy.context.scene.render.fps, bpy.context.scene.export_time_round)
+    val = round(obj_prop, bpy.context.scene.export_value_round)
+    if (optimize and (val == anim_channel.prev_val)):
+        return
+
+    anim_channel.prev_val = val
+    if seconds not in anim_channel.time_val_map:
+        anim_channel.time_val_map[seconds] = val
+
+def generate_keyframe_anim_data(obj, anim_data: AnimData):
+    if obj.animation_data is None or obj.animation_data.action is None:
+        return
+
+    fcurves = obj.animation_data.action.fcurves
+    if (fcurve := fcurves.find("location", index=0)) is not None:
+        _write_fcurve_keyframe_values(obj, anim_data.pos_x_channel, fcurve)
+    if (fcurve := fcurves.find("location", index=1)) is not None:
+        _write_fcurve_keyframe_values(obj, anim_data.pos_y_channel, fcurve)
+    if (fcurve := fcurves.find("location", index=2)) is not None:
+        _write_fcurve_keyframe_values(obj, anim_data.pos_z_channel, fcurve)
+    if (fcurve := fcurves.find("rotation_euler", index=0)) is not None:
+        _write_fcurve_keyframe_values(obj, anim_data.rot_x_channel, fcurve)
+    if (fcurve := fcurves.find("rotation_euler", index=1)) is not None:
+        _write_fcurve_keyframe_values(obj, anim_data.rot_y_channel, fcurve)
+    if (fcurve := fcurves.find("rotation_euler", index=2)) is not None:
+        _write_fcurve_keyframe_values(obj, anim_data.rot_z_channel, fcurve)
+    if (fcurve := fcurves.find("scale", index=0)) is not None:
+        _write_fcurve_keyframe_values(obj, anim_data.scale_x_channel, fcurve)
+    if (fcurve := fcurves.find("scale", index=1)) is not None:
+        _write_fcurve_keyframe_values(obj, anim_data.scale_y_channel, fcurve)
+    if (fcurve := fcurves.find("scale", index=2)) is not None:
+        _write_fcurve_keyframe_values(obj, anim_data.scale_z_channel, fcurve)
+
+def generate_per_frame_anim_data(obj, anim_data: AnimData):
+    if obj.animation_data is None or obj.animation_data.action is None:
+        return
+
+    fcurves = obj.animation_data.action.fcurves
     if fcurves.find("location", index=0) is not None:
-        _write_obj_prop_at_current_frame(ig_anim.pos_x_channel, ig_obj.location.x)
+        _write_obj_prop_at_current_frame(obj, anim_data.pos_x_channel, obj.location.x)
     if fcurves.find("location", index=1) is not None:
-        _write_obj_prop_at_current_frame(ig_anim.pos_y_channel, -ig_obj.location.y)
+        _write_obj_prop_at_current_frame(obj, anim_data.pos_y_channel, -obj.location.y)
     if fcurves.find("location", index=2) is not None:
-        _write_obj_prop_at_current_frame(ig_anim.pos_z_channel, ig_obj.location.z)
+        _write_obj_prop_at_current_frame(obj, anim_data.pos_z_channel, obj.location.z)
     if fcurves.find("rotation_euler", index=0) is not None:
-        _write_obj_prop_at_current_frame(ig_anim.rot_x_channel, math.degrees(ig_obj.rotation_euler.x))
+        _write_obj_prop_at_current_frame(obj, anim_data.rot_x_channel, math.degrees(obj.rotation_euler.x))
     if fcurves.find("rotation_euler", index=1) is not None:
-        _write_obj_prop_at_current_frame(ig_anim.rot_y_channel, -math.degrees(ig_obj.rotation_euler.y))
+        _write_obj_prop_at_current_frame(obj, anim_data.rot_y_channel, -math.degrees(obj.rotation_euler.y))
     if fcurves.find("rotation_euler", index=2) is not None:
-        _write_obj_prop_at_current_frame(ig_anim.rot_z_channel, math.degrees(i.rotation_euler.z))
+        _write_obj_prop_at_current_frame(obj, anim_data.rot_z_channel, math.degrees(obj.rotation_euler.z))
     if fcurves.find("scale", index=0) is not None:
-        _write_obj_prop_at_current_frame(ig_anim.scale_x_channel, ig_obj.scale.x)
+        _write_obj_prop_at_current_frame(obj, anim_data.scale_x_channel, obj.scale.x)
     if fcurves.find("scale", index=1) is not None:
-        _write_obj_prop_at_current_frame(ig_anim.scale_y_channel, ig_obj.scale.y)
+        _write_obj_prop_at_current_frame(obj, anim_data.scale_y_channel, obj.scale.y)
     if fcurves.find("scale", index=2) is not None:
-        _write_obj_prop_at_current_frame(ig_anim.scale_z_channel, ig_obj.scale.z)
+        _write_obj_prop_at_current_frame(obj, anim_data.scale_z_channel, obj.scale.z)
 
 def generate_anim_xml(parent_xml, anim_data: AnimData):
     pass

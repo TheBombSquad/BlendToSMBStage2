@@ -1,5 +1,4 @@
 import itertools
-from BlendToSMBStage2.descriptors import descriptor_model_bg, descriptor_model_fg
 import bpy
 import bgl
 import bmesh
@@ -14,7 +13,7 @@ import math
 import re
 
 from . import statics, stage_object_drawing, generate_config, dimension_dict
-from .descriptors import descriptors, descriptor_item_group, descriptor_model_stage, descriptor_track_path
+from .descriptors import descriptors, descriptor_item_group, descriptor_model_stage, descriptor_track_path, descriptor_model_bg, descriptor_model_fg
 from bpy.props import BoolProperty, PointerProperty, EnumProperty, FloatProperty, IntProperty
 from enum import Enum
 from sys import platform
@@ -1641,10 +1640,10 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
                 self.anim_data = generate_config.AnimData()
     
         # Build ObjExport lists
-        ig_export_datas = []
-        fg_export_datas = []
-        bg_export_datas = []
-        other_export_datas = []
+        ig_export_datas: list[ObjExport] = []
+        fg_export_datas: list[ObjExport] = []
+        bg_export_datas: list[ObjExport] = []
+        other_export_datas: list[ObjExport] = []
 
         for obj in bpy.context.scene.objects:
             if obj.type not in ["EMPTY", "MESH", "CURVE"]:
@@ -1688,17 +1687,17 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
 
                 print("\tInserted frame zero keyframe for item group " + exp.obj.name)
 
-        # TODO This needs to go somewhere...
-        # if ig.animation_data is not None and ig.animation_data.action is not None:
-        #     generate_config.addAnimation(ig, xig)
+        # Generate initial animation data based on fcurve keyframes
+        for exp in itertools.chain(ig_export_datas, fg_export_datas, bg_export_datas):
+            generate_config.generate_keyframe_anim_data(exp.obj, exp.anim_data)
 
-        # Generate initial animation data based on fcurce keyframes
-        for exp in itertools.chain(ig_export_datas, fg_export_datas, bg_export_datas):
-            pass
         # Generate per-global-frame animation data
-        # TODO step global frame appropriately based on start/end/step etc
-        for exp in itertools.chain(ig_export_datas, fg_export_datas, bg_export_datas):
-            pass
+        start_frame = bpy.context.scene.frame_start
+        end_frame = bpy.context.scene.frame_end
+        for frame in range(start_frame, end_frame + 1):
+            bpy.context.scene.frame_set(frame)
+            for exp in itertools.chain(ig_export_datas, fg_export_datas, bg_export_datas):
+                generate_config.generate_per_frame_anim_data(exp.obj, exp.anim_data)
 
         # Generate itemgroup XML
         for ig_exp in ig_export_datas:
@@ -1725,9 +1724,9 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
         
         # Generate FG/BG XML
         for fg_exp in fg_export_datas:
-            descriptor_model_fg.generate_xml_with_anim_data(root, fg_exp.obj, fg_exp.anim_data)
+            descriptor_model_fg.DescriptorFG.generate_xml_with_anim(root, fg_exp.obj, fg_exp.anim_data)
         for bg_exp in bg_export_datas:
-            descriptor_model_bg.generate_xml_with_anim_data(root, bg_exp.obj, bg_exp.anim_data)
+            descriptor_model_bg.DescriptorBG.generate_xml_with_anim(root, bg_exp.obj, bg_exp.anim_data)
 
         # Generate other object XML
         for other_exp in other_export_datas:
