@@ -2,3 +2,4 @@ ws2lzfrontend/
 GxUtils/
 .idea/
 *.pyc
+.vscode/

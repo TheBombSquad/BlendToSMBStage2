@@ -1,3 +1,4 @@
+from BlendToSMBStage2.stage_editor import AnimData
 import bpy
 import sys
 import math
@@ -104,102 +105,53 @@ def addKeyframes(parent, selector, fcurve):
         keyframe.set("easing", "LINEAR")
         parent.append(keyframe)
 
-def addPosXAnim(parent):
-    addKeyframes(parent, lambda i: i.location.x, lambda f: f.fcurves.find("location", index=0))
+def _write_fcurve_keyframe_values(anim_data: AnimData, fcurve):
+    pass
 
-def addPosYAnim(parent):
-    addKeyframes(parent,lambda i: -i.location.y, lambda f: f.fcurves.find("location", index=1))
+def _write_obj_prop_at_current_frame(anim_data: AnimData, ig_obj_prop):
+    pass
 
-def addPosZAnim(parent):
-    addKeyframes(parent,lambda i: i.location.z, lambda f: f.fcurves.find("location", index=2))
+def generate_keyframe_anim_data(ig_obj, ig_anim: AnimData):
+    fcurves = ig_obj.animation_data.action.fcurves
+    if fcurve := fcurves.find("location", index=0) is not None:
+        _write_fcurve_keyframe_values(ig_obj, ig_anim.pos_x_channel, fcurve)
+    if fcurve := fcurves.find("location", index=1) is not None:
+        _write_fcurve_keyframe_values(ig_obj, ig_anim.pos_y_channel, fcurve)
+    if fcurve := fcurves.find("location", index=2) is not None:
+        _write_fcurve_keyframe_values(ig_obj, ig_anim.pos_z_channel, fcurve)
+    if fcurve := fcurves.find("rotation_euler", index=0) is not None:
+        _write_fcurve_keyframe_values(ig_obj, ig_anim.rot_x_channel, fcurve)
+    if fcurve := fcurves.find("rotation_euler", index=1) is not None:
+        _write_fcurve_keyframe_values(ig_obj, ig_anim.rot_y_channel, fcurve)
+    if fcurve := fcurves.find("rotation_euler", index=2) is not None:
+        _write_fcurve_keyframe_values(ig_obj, ig_anim.rot_z_channel, fcurve)
+    if fcurve := fcurves.find("scale", index=0) is not None:
+        _write_fcurve_keyframe_values(ig_obj, ig_anim.scale_x_channel, fcurve)
+    if fcurve := fcurves.find("scale", index=1) is not None:
+        _write_fcurve_keyframe_values(ig_obj, ig_anim.scale_y_channel, fcurve)
+    if fcurve := fcurves.find("scale", index=2) is not None:
+        _write_fcurve_keyframe_values(ig_obj, ig_anim.scale_z_channel, fcurve)
 
-def addRotXAnim(parent):
-    addKeyframes(parent,lambda i: math.degrees(i.rotation_euler.x), lambda f: f.fcurves.find("rotation_euler", index=0))
+def generate_per_frame_anim_data(ig_obj, ig_anim: AnimData):
+    fcurves = ig_obj.animation_data.action.fcurves
+    if fcurves.find("location", index=0) is not None:
+        _write_obj_prop_at_current_frame(ig_anim.pos_x_channel, ig_obj.location.x)
+    if fcurves.find("location", index=1) is not None:
+        _write_obj_prop_at_current_frame(ig_anim.pos_y_channel, -ig_obj.location.y)
+    if fcurves.find("location", index=2) is not None:
+        _write_obj_prop_at_current_frame(ig_anim.pos_z_channel, ig_obj.location.z)
+    if fcurves.find("rotation_euler", index=0) is not None:
+        _write_obj_prop_at_current_frame(ig_anim.rot_x_channel, math.degrees(ig_obj.rotation_euler.x))
+    if fcurves.find("rotation_euler", index=1) is not None:
+        _write_obj_prop_at_current_frame(ig_anim.rot_y_channel, -math.degrees(ig_obj.rotation_euler.y))
+    if fcurves.find("rotation_euler", index=2) is not None:
+        _write_obj_prop_at_current_frame(ig_anim.rot_z_channel, math.degrees(i.rotation_euler.z))
+    if fcurves.find("scale", index=0) is not None:
+        _write_obj_prop_at_current_frame(ig_anim.scale_x_channel, ig_obj.scale.x)
+    if fcurves.find("scale", index=1) is not None:
+        _write_obj_prop_at_current_frame(ig_anim.scale_y_channel, ig_obj.scale.y)
+    if fcurves.find("scale", index=2) is not None:
+        _write_obj_prop_at_current_frame(ig_anim.scale_z_channel, ig_obj.scale.z)
 
-def addRotYAnim(parent):
-    addKeyframes(parent,lambda i: -math.degrees(i.rotation_euler.y), lambda f: f.fcurves.find("rotation_euler", index=1))
-
-def addRotZAnim(parent):
-    addKeyframes(parent,lambda i: math.degrees(i.rotation_euler.z), lambda f: f.fcurves.find("rotation_euler", index=2))
-
-def addScaleXAnim(parent):
-    addKeyframes(parent, lambda i: i.scale.x, lambda f: f.fcurves.find("scale", index=0))
-
-def addScaleYAnim(parent):
-    addKeyframes(parent,lambda i: i.scale.y, lambda f: f.fcurves.find("scale", index=1))
-
-def addScaleZAnim(parent):
-    addKeyframes(parent,lambda i: i.scale.z, lambda f: f.fcurves.find("scale", index=2))
-
-def addAnimation(obj, parent):
-    print("\tChecking for animation...")
-    bpy.context.view_layer.objects.active = obj
-
-    animKeyframes = etree.Element("animKeyframes")
-    hasInserted = False
-
-    fcurves = obj.animation_data.action.fcurves
-
-    if fcurves.find("location", index=0):
-        print("\t\tAdding X Pos keyframes...")
-        posX = etree.SubElement(animKeyframes, "posX")
-        addPosXAnim(posX)
-        if not hasInserted:
-            parent.append(animKeyframes)
-            hasInserted = True
-    if fcurves.find("location", index=1):
-        print("\t\tAdding Y Pos keyframes...")
-        posZ = etree.SubElement(animKeyframes, "posZ")
-        addPosYAnim(posZ)
-        if not hasInserted:
-            parent.append(animKeyframes)
-            hasInserted = True
-    if fcurves.find("location", index=2):
-        print("\t\tAdding Z Pos keyframes...")
-        posY = etree.SubElement(animKeyframes, "posY")
-        addPosZAnim(posY)
-        if not hasInserted:
-            parent.append(animKeyframes)
-            hasInserted = True
-    if fcurves.find("rotation_euler", index=0):
-        print("\t\tAdding X Rot keyframes...")
-        rotX = etree.SubElement(animKeyframes, "rotX")
-        addRotXAnim(rotX)
-        if not hasInserted:
-            parent.append(animKeyframes)
-            hasInserted = True
-    if fcurves.find("rotation_euler", index=1):
-        print("\t\tAdding Y Rot keyframes...")
-        rotZ = etree.SubElement(animKeyframes, "rotZ")
-        addRotYAnim(rotZ)
-        if not hasInserted:
-            parent.append(animKeyframes)
-            hasInserted = True
-    if fcurves.find("rotation_euler", index=2):
-        print("\t\tAdding Z Rot keyframes...")
-        rotY = etree.SubElement(animKeyframes, "rotY")
-        addRotZAnim(rotY)
-        if not hasInserted:
-            parent.append(animKeyframes)
-            hasInserted = True
-    if fcurves.find("scale", index=0):
-        print("\t\tAdding X Scale keyframes...")
-        scaleX = etree.SubElement(animKeyframes, "scaleX")
-        addScaleXAnim(scaleX)
-        if not hasInserted:
-            parent.append(animKeyframes)
-            hasInserted = True
-    if fcurves.find("scale", index=1):
-        print("\t\tAdding Y Scale keyframes...")
-        scaleZ = etree.SubElement(animKeyframes, "scaleZ")
-        addScaleYAnim(scaleZ)
-        if not hasInserted:
-            parent.append(animKeyframes)
-            hasInserted = True
-    if fcurves.find("scale", index=2):
-        print("\t\tAdding Z Scale keyframes...")
-        scaleY = etree.SubElement(animKeyframes, "scaleY")
-        addScaleZAnim(scaleY)
-        if not hasInserted:
-            parent.append(animKeyframes)
-            hasInserted = True 
+def generate_anim_xml(parent_xml, anim_data: AnimData):
+    pass
