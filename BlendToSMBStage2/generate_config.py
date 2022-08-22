@@ -1,4 +1,4 @@
-from BlendToSMBStage2.stage_editor import AnimData
+from collections import defaultdict
 import bpy
 import sys
 import math
@@ -10,6 +10,25 @@ if platform == "linux" or platform == "linux2":
     from lxml import etree
 else:
     import xml.etree.ElementTree as etree
+
+class AnimData:
+    class Channel:
+        def __init__(self):
+            self.time_val_map = defaultdict({})
+            self.last_val = None
+
+    def __init__(self):
+        # float time -> float value
+        self.pos_x_channel = AnimData.Channel()
+        self.pos_y_channel = AnimData.Channel()
+        self.pos_z_channel = AnimData.Channel()
+        self.rot_x_channel = AnimData.Channel()
+        self.rot_y_channel = AnimData.Channel()
+        self.rot_z_channel = AnimData.Channel()
+        self.scale_x_channel = AnimData.Channel()
+        self.scale_y_channel = AnimData.Channel()
+        self.scale_z_channel = AnimData.Channel()
+
 
 # Generate an object entry with any of the following: position, rotation, scale 
 def generate_generic_obj_element(obj, obj_type, parent, *, position=False, rotation=False, scale=False, name=True, static_bg=False):

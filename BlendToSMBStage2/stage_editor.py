@@ -1,4 +1,3 @@
-from collections import defaultdict
 import itertools
 from BlendToSMBStage2.descriptors import descriptor_model_bg, descriptor_model_fg
 import bpy
@@ -1543,24 +1542,6 @@ def append_imported_bg_objects(self, context, bg_root, dest_root, obj_names):
 
         dest_root.append(imported_bg_model)
 
-class AnimData:
-    class Channel:
-        def __init__(self):
-            self.time_val_map = defaultdict({})
-            self.last_val = None
-
-    def __init__(self):
-        # float time -> float value
-        self.pos_x_channel = AnimData.Channel()
-        self.pos_y_channel = AnimData.Channel()
-        self.pos_z_channel = AnimData.Channel()
-        self.rot_x_channel = AnimData.Channel()
-        self.rot_y_channel = AnimData.Channel()
-        self.rot_z_channel = AnimData.Channel()
-        self.scale_x_channel = AnimData.Channel()
-        self.scale_y_channel = AnimData.Channel()
-        self.scale_z_channel = AnimData.Channel()
-
 
 # Operator for exporting the stage config as a .XML file
 class OBJECT_OT_generate_config(bpy.types.Operator):
@@ -1657,7 +1638,7 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
         class ObjExport:
             def __init__(self, obj):
                 self.obj = obj
-                self.anim_data = AnimData()
+                self.anim_data = generate_config.AnimData()
     
         # Build ObjExport lists
         ig_export_datas = []
@@ -1668,7 +1649,7 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
         for obj in bpy.context.scene.objects:
             if obj.type not in ["EMPTY", "MESH", "CURVE"]:
                 continue
-            if "[IG]" in obj.name and 'collisionStartX' in ig.keys(): # Is .keys() needed?
+            if "[IG]" in obj.name and 'collisionStartX' in obj.keys(): # Is .keys() needed?
                 ig_export_datas.append(ObjExport(obj))
             elif "[FG]" in obj.name:
                 fg_export_datas.append(ObjExport(obj))
