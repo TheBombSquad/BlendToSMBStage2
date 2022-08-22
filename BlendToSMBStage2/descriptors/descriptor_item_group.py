@@ -19,7 +19,7 @@ class DescriptorIG(DescriptorBase):
         return "[IG]"
 
     @staticmethod
-    def generate_xml(parent_element, obj):
+    def generate_xml_with_anim(parent_element, obj, anim_data):
         if "collisionStartX" not in obj.keys():
             raise Exception("Object " + obj.name + " is not a real item group! Try converting it into an item group, or renaming it.")
 
@@ -93,6 +93,8 @@ class DescriptorIG(DescriptorBase):
         etree.SubElement(grid, "start", x=str(obj["collisionStartX"]), z=str(obj["collisionStartY"]))
         etree.SubElement(grid, "step", x=str(obj["collisionStepX"]), z=str(obj["collisionStepY"]))
         etree.SubElement(grid, "count", x=str(obj["collisionStepCountX"]), z=str(obj["collisionStepCountY"]))
+
+        # TODO anim xml
 
         return xig
 
