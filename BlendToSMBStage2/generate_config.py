@@ -109,7 +109,7 @@ def _write_obj_prop_at_current_frame(obj, anim_channel: AnimData.Channel, obj_pr
     # Sets up custom per-object timestep if one is specified
     if "exportTimestep" in obj: 
         if obj["exportTimestep"] != -1:
-            timestep = bpy.context.view_layer.objects.active["exportTimestep"]
+            timestep = obj["exportTimestep"]
 
     curr_frame = bpy.context.scene.frame_current
     # Ignore out-of-range frames
@@ -173,8 +173,20 @@ def generate_per_frame_anim_data(obj, anim_data: AnimData):
     if fcurves.find("scale", index=2) is not None:
         _write_obj_prop_at_current_frame(obj, anim_data.scale_z_channel, obj.scale.z)
 
-def _generate_anim_channel_xml(parent_xml, anim_channel: AnimData.Channel):
-    pass
-
+def _generate_anim_channel_xml(parent_xml, anim_channel: AnimData.Channel, name):
+    if len(anim_channel.time_val_map) == 0:
+        return
+    
 def generate_anim_xml(parent_xml, anim_data: AnimData):
-    pass
+    keyframes_xml = etree.Element("animKeyframes")
+    _generate_anim_channel_xml(keyframes_xml, anim_data.pos_x_channel, "posX")
+    _generate_anim_channel_xml(keyframes_xml, anim_data.pos_y_channel, "posY")
+    _generate_anim_channel_xml(keyframes_xml, anim_data.pos_z_channel, "posZ")
+    _generate_anim_channel_xml(keyframes_xml, anim_data.rot_x_channel, "rotX")
+    _generate_anim_channel_xml(keyframes_xml, anim_data.rot_y_channel, "rotY")
+    _generate_anim_channel_xml(keyframes_xml, anim_data.rot_z_channel, "rotZ")
+    _generate_anim_channel_xml(keyframes_xml, anim_data.scale_x_channel, "scaleX")
+    _generate_anim_channel_xml(keyframes_xml, anim_data.scale_y_channel, "scaleY")
+    _generate_anim_channel_xml(keyframes_xml, anim_data.scale_z_channel, "scaleZ")
+    if len(keyframes_xml) > 0:
+        parent_xml.append(keyframes_xml)
