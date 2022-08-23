@@ -1638,15 +1638,25 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
         bg_export_datas: list[ObjExport] = []
         other_export_datas: list[ObjExport] = []
 
+        ig_tag = descriptor_item_group.DescriptorIG.get_object_name()
+        fg_tag = descriptor_model_fg.DescriptorFG.get_object_name()
+        bg_tag = descriptor_model_bg.DescriptorBG.get_object_name()
+
         for obj in bpy.context.scene.objects:
             if obj.type not in ["EMPTY", "MESH", "CURVE"]:
                 continue
-            if "[IG]" in obj.name and 'collisionStartX' in obj.keys(): # Is .keys() needed?
-                ig_export_datas.append(ObjExport(obj))
-            elif obj.name.startswith(descriptor_model_fg.DescriptorFG.get_object_name()):
-                fg_export_datas.append(ObjExport(obj))
-            elif obj.name.startswith(descriptor_model_bg.DescriptorBG.get_object_name()):
-                bg_export_datas.append(ObjExport(obj))
+            if ig_tag in obj.name:
+                # Don't export at all otherwise
+                if 'collisionStartX' in obj:
+                    ig_export_datas.append(ObjExport(obj))
+            elif fg_tag in obj.name:
+                # Don't export at all otherwise
+                if obj.name.startswith(descriptor_model_fg.DescriptorFG.get_object_name()):
+                    fg_export_datas.append(ObjExport(obj))
+            elif bg_tag in obj.name:
+                # Don't export at all otherwise
+                if obj.name.startswith(descriptor_model_bg.DescriptorBG.get_object_name()):
+                    bg_export_datas.append(ObjExport(obj))
             else:
                 other_export_datas.append(ObjExport(obj))
 
