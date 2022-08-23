@@ -1643,9 +1643,9 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
                 continue
             if "[IG]" in obj.name and 'collisionStartX' in obj.keys(): # Is .keys() needed?
                 ig_export_datas.append(ObjExport(obj))
-            elif "[FG]" in obj.name:
+            elif obj.name.startswith(descriptor_model_fg.DescriptorFG.get_object_name()):
                 fg_export_datas.append(ObjExport(obj))
-            elif "[BG]" in obj.name:
+            elif obj.name.startswith(descriptor_model_bg.DescriptorBG.get_object_name()):
                 bg_export_datas.append(ObjExport(obj))
             else:
                 other_export_datas.append(ObjExport(obj))
