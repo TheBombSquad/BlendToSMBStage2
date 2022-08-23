@@ -1666,7 +1666,6 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
         # This also fixes weirdness with background and foreground objects
         for exp in itertools.chain(ig_export_datas, fg_export_datas, bg_export_datas):
             if exp.obj.animation_data is not None and exp.obj.animation_data.action is not None:
-                first_keyframe_exists = False
                 existing_channels = []
                 fcurves = exp.obj.animation_data.action.fcurves
 
