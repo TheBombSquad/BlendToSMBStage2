@@ -1706,6 +1706,18 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
         finally:
             bpy.context.scene.frame_set(orig_frame)
 
+        # Generate FG/BG XML
+        for fg_exp in fg_export_datas:
+            descriptor_model_fg.DescriptorFG.generate_xml_with_anim(root, fg_exp.obj, fg_exp.anim_data)
+        for bg_exp in bg_export_datas:
+            descriptor_model_bg.DescriptorBG.generate_xml_with_anim(root, bg_exp.obj, bg_exp.anim_data)
+
+        # Generate other object XML
+        for other_exp in other_export_datas:
+            for desc in descriptors.descriptors_root:
+                if other_exp.obj.name.startswith(desc.get_object_name()): 
+                    desc.generate_xml(root, other_exp.obj)
+
         # Generate itemgroup XML
         for ig_exp in ig_export_datas:
             ig_xml = descriptor_item_group.DescriptorIG.generate_xml_with_anim(root, ig_exp.obj, ig_exp.anim_data)
@@ -1728,18 +1740,6 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
                 # Object is not a listed descriptor
                 if not match_descriptor and child.data is not None:
                     descriptor_model_stage.DescriptorModel.generate_xml(ig_xml, child)
-        
-        # Generate FG/BG XML
-        for fg_exp in fg_export_datas:
-            descriptor_model_fg.DescriptorFG.generate_xml_with_anim(root, fg_exp.obj, fg_exp.anim_data)
-        for bg_exp in bg_export_datas:
-            descriptor_model_bg.DescriptorBG.generate_xml_with_anim(root, bg_exp.obj, bg_exp.anim_data)
-
-        # Generate other object XML
-        for other_exp in other_export_datas:
-            for desc in descriptors.descriptors_root:
-                if other_exp.obj.name.startswith(desc.get_object_name()): 
-                    desc.generate_xml(root, other_exp.obj)
 
         # Import background and foreground objects from a .XML file, if it exists
         bg_path = bpy.path.abspath(context.scene.background_import_path)
