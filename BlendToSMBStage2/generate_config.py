@@ -177,14 +177,15 @@ def _generate_anim_channel_xml(parent_xml, anim_channel: AnimData.Channel, name)
     
 def generate_anim_xml(parent_xml, anim_data: AnimData):
     keyframes_xml = etree.Element("animKeyframes")
+    # Y and Z need to be swapped for some reason?
     _generate_anim_channel_xml(keyframes_xml, anim_data.pos_x_channel, "posX")
-    _generate_anim_channel_xml(keyframes_xml, anim_data.pos_y_channel, "posY")
-    _generate_anim_channel_xml(keyframes_xml, anim_data.pos_z_channel, "posZ")
+    _generate_anim_channel_xml(keyframes_xml, anim_data.pos_y_channel, "posZ")
+    _generate_anim_channel_xml(keyframes_xml, anim_data.pos_z_channel, "posY")
     _generate_anim_channel_xml(keyframes_xml, anim_data.rot_x_channel, "rotX")
-    _generate_anim_channel_xml(keyframes_xml, anim_data.rot_y_channel, "rotY")
-    _generate_anim_channel_xml(keyframes_xml, anim_data.rot_z_channel, "rotZ")
+    _generate_anim_channel_xml(keyframes_xml, anim_data.rot_y_channel, "rotZ") 
+    _generate_anim_channel_xml(keyframes_xml, anim_data.rot_z_channel, "rotY")
     _generate_anim_channel_xml(keyframes_xml, anim_data.scale_x_channel, "scaleX")
-    _generate_anim_channel_xml(keyframes_xml, anim_data.scale_y_channel, "scaleY")
-    _generate_anim_channel_xml(keyframes_xml, anim_data.scale_z_channel, "scaleZ")
+    _generate_anim_channel_xml(keyframes_xml, anim_data.scale_y_channel, "scaleZ")
+    _generate_anim_channel_xml(keyframes_xml, anim_data.scale_z_channel, "scaleY")
     if len(keyframes_xml) > 0:
         parent_xml.append(keyframes_xml)
