@@ -120,8 +120,8 @@ def _write_obj_prop_at_current_frame(obj, anim_channel: AnimData.Channel, obj_pr
     val = round(obj_prop, bpy.context.scene.export_value_round)
     if (optimize and (val == anim_channel.prev_val)):
         return
-
     anim_channel.prev_val = val
+
     if seconds not in anim_channel.time_val_map:
         anim_channel.time_val_map[seconds] = val
 
@@ -172,6 +172,9 @@ def generate_per_frame_anim_data(obj, anim_data: AnimData):
         _write_obj_prop_at_current_frame(obj, anim_data.scale_y_channel, obj.scale.y)
     if fcurves.find("scale", index=2) is not None:
         _write_obj_prop_at_current_frame(obj, anim_data.scale_z_channel, obj.scale.z)
+
+def _generate_anim_channel_xml(parent_xml, anim_channel: AnimData.Channel):
+    pass
 
 def generate_anim_xml(parent_xml, anim_data: AnimData):
     pass

@@ -1627,13 +1627,6 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
             for i in [0, 1, 2]:
                 all_curve_types.append((i, ct))
 
-        # TODO
-        # Apply fcurve keyframe hack to IG/FG/BG objs
-        # Generate animation data for all IG/FG/BG
-        # Generate XML for all objects
-        #  For IG/FG/BG, call special descriptor method that takes anim data
-        # Undo keyframe hack
-
         class ObjExport:
             def __init__(self, obj):
                 self.obj = obj
@@ -1695,11 +1688,13 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
         start_frame = bpy.context.scene.frame_start
         end_frame = bpy.context.scene.frame_end
         orig_frame = bpy.context.scene.frame_current
-        for frame in range(start_frame, end_frame + 1):
-            bpy.context.scene.frame_set(frame)
-            for exp in itertools.chain(ig_export_datas, fg_export_datas, bg_export_datas):
-                generate_config.generate_per_frame_anim_data(exp.obj, exp.anim_data)
-        bpy.context.scene.frame_set(orig_frame)
+        try:
+            for frame in range(start_frame, end_frame + 1):
+                bpy.context.scene.frame_set(frame)
+                for exp in itertools.chain(ig_export_datas, fg_export_datas, bg_export_datas):
+                    generate_config.generate_per_frame_anim_data(exp.obj, exp.anim_data)
+        finally:
+            bpy.context.scene.frame_set(orig_frame)
 
         # Generate itemgroup XML
         for ig_exp in ig_export_datas:
