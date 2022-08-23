@@ -59,18 +59,6 @@ def generate_generic_obj_element(obj, obj_type, parent, *, position=False, rotat
 
     return sub
 
-# Generates an XML keyframe list for the specified axis and fcurve type
-def addKeyframes(parent, selector, fcurve):
-    # Create sorted XML keyframe list
-    for time in sorted(list(keyframes.keys())):
-        val = keyframes[time]
-
-        keyframe = etree.Element("keyframe")
-        keyframe.set("time", str(time))
-        keyframe.set("value", str(val))
-        keyframe.set("easing", "LINEAR")
-        parent.append(keyframe)
-
 def _write_fcurve_keyframe_values(obj, anim_channel: AnimData.Channel, fcurve):
     start_frame = bpy.context.scene.frame_start
     end_frame = bpy.context.scene.frame_end
@@ -176,6 +164,16 @@ def generate_per_frame_anim_data(obj, anim_data: AnimData):
 def _generate_anim_channel_xml(parent_xml, anim_channel: AnimData.Channel, name):
     if len(anim_channel.time_val_map) == 0:
         return
+    channel_xml = etree.SubElement(parent_xml, name)
+
+    # Create sorted XML keyframe list
+    for time in sorted(list(anim_channel.time_val_map.keys())):
+        val = anim_channel.time_val_map[time]
+        keyframe_xml = etree.SubElement(channel_xml, "keyframe")
+        keyframe_xml.set("time", str(time))
+        keyframe_xml.set("value", str(val))
+        keyframe_xml.set("easing", "LINEAR")
+
     
 def generate_anim_xml(parent_xml, anim_data: AnimData):
     keyframes_xml = etree.Element("animKeyframes")
