@@ -1613,8 +1613,11 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
 
         igs = []
         
-        # Start frame of animation
+        # Export w.r.t first frame of animation, except when exporting per-frame animation
         begin_frame = context.scene.frame_start
+        end_frame = bpy.context.scene.frame_end
+        orig_frame = bpy.context.scene.frame_current
+        context.scene.frame_set(begin_frame)
 
         # Marks objects that don't have keyframes on frame 0, so they can be removed later
         first_frame_added_objs = []
@@ -1664,6 +1667,7 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
         # B2SMB1 inadvertently fixed this by baking *all* keyframes
         # This is fixed by adding an initial keyframe on every curve
         # This also fixes weirdness with background and foreground objects
+        context.scene.frame_set(begin_frame)
         for exp in itertools.chain(ig_export_datas, fg_export_datas, bg_export_datas):
             if exp.obj.animation_data is not None and exp.obj.animation_data.action is not None:
                 existing_channels = []
@@ -1694,16 +1698,11 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
             generate_config.generate_keyframe_anim_data(exp.obj, exp.anim_data)
 
         # Generate per-global-frame animation data
-        start_frame = bpy.context.scene.frame_start
-        end_frame = bpy.context.scene.frame_end
-        orig_frame = bpy.context.scene.frame_current
-        try:
-            for frame in range(start_frame, end_frame + 1):
-                bpy.context.scene.frame_set(frame)
-                for exp in itertools.chain(ig_export_datas, fg_export_datas, bg_export_datas):
-                    generate_config.generate_per_frame_anim_data(exp.obj, exp.anim_data)
-        finally:
-            bpy.context.scene.frame_set(orig_frame)
+        for frame in range(begin_frame, end_frame + 1):
+            bpy.context.scene.frame_set(frame)
+            for exp in itertools.chain(ig_export_datas, fg_export_datas, bg_export_datas):
+                generate_config.generate_per_frame_anim_data(exp.obj, exp.anim_data)
+        context.scene.frame_set(begin_frame)
 
         # Generate FG/BG XML
         for fg_exp in fg_export_datas:
@@ -1739,6 +1738,9 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
                 # Object is not a listed descriptor
                 if not match_descriptor and child.data is not None:
                     descriptor_model_stage.DescriptorModel.generate_xml(ig_xml, child)
+
+        # Restore frame user was on before exporting
+        bpy.context.scene.frame_set(orig_frame)
 
         # Import background and foreground objects from a .XML file, if it exists
         bg_path = bpy.path.abspath(context.scene.background_import_path)
