@@ -55,8 +55,7 @@ class DescriptorFG(DescriptorBase):
             texScroll = etree.SubElement(fg_xml, "textureScroll", x=str(obj["texScrollUSpeed"]),
                                                                y=str(obj["texScrollVSpeed"]))
         # Add animation
-        if obj.animation_data is not None and obj.animation_data.action is not None:
-            generate_config.generate_anim_xml(fg_xml, anim_data)
+        generate_config.generate_anim_xml(fg_xml, anim_data)
 
     @staticmethod
     def construct(obj):

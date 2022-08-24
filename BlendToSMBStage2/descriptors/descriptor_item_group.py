@@ -95,8 +95,7 @@ class DescriptorIG(DescriptorBase):
         etree.SubElement(grid, "count", x=str(obj["collisionStepCountX"]), z=str(obj["collisionStepCountY"]))
 
         # Add animation
-        if obj.animation_data is not None and obj.animation_data.action is not None:
-            generate_config.generate_anim_xml(ig_xml, anim_data)
+        generate_config.generate_anim_xml(ig_xml, anim_data)
 
         return ig_xml
 
