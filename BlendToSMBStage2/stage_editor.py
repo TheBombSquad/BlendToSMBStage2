@@ -1667,7 +1667,6 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
         # B2SMB1 inadvertently fixed this by baking *all* keyframes
         # This is fixed by adding an initial keyframe on every curve
         # This also fixes weirdness with background and foreground objects
-        context.scene.frame_set(begin_frame)
         for exp in itertools.chain(ig_export_datas, fg_export_datas, bg_export_datas):
             if exp.obj.animation_data is not None and exp.obj.animation_data.action is not None:
                 existing_channels = []
