@@ -1,6 +1,4 @@
-from collections import defaultdict
 import bpy
-import sys
 import math
 from sys import platform
 
