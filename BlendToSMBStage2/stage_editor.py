@@ -100,7 +100,7 @@ class OBJECT_OT_convert_selected(bpy.types.Operator):
 
         # Clear active properties
         if self.prefix not in no_replace:
-            for key in selected.keys():
+            for key in list(selected.keys()):
                 del selected[key]
 
         # Remove existing prefixes
@@ -114,6 +114,8 @@ class OBJECT_OT_convert_selected(bpy.types.Operator):
         for desc in descriptors.descriptors:
             if selected.name.startswith(desc.get_object_name()): 
                 desc.construct(selected)
+
+        updateUIProps(selected)
 
         return {'FINISHED'}
 
