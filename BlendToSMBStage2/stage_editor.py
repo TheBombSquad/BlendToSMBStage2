@@ -10,6 +10,7 @@ import mathutils
 import random
 import math
 import re
+import locale
 
 from . import statics, stage_object_drawing, generate_config, dimension_dict
 from .descriptors import descriptors, descriptor_item_group, descriptor_model_stage, descriptor_track_path
@@ -22,6 +23,10 @@ if platform == "linux" or platform == "linux2":
     from lxml import etree
 else:
     import xml.etree.ElementTree as etree
+
+# To handle encoding shenanigans when we run GX/WS as subprocesses
+if platform == "win32":
+    from ctypes import windll
 
 # Operator for adding external background objects
 class OBJECT_OT_add_external_objects(bpy.types.Operator):
@@ -1205,12 +1210,26 @@ class OBJECT_OT_export_gmatpl(bpy.types.Operator):
             self.report({'ERROR'}, f"GxModelViewer failed to run. See the console for more details.")
             return {'CANCELLED'}
 
+        
+        gx_stdout_bytes = gx_result.stdout
 
-        errors = [error for error in gx_result.stdout.decode().split('\r\n') if ("Import Warning" in error) or ("Error" in error)]
+        try:
+            gx_stdout_str = gx_stdout_bytes.decode().split('\r\n')
+        except UnicodeDecodeError:
+            try:
+                if sys.platform == 'win32':
+                    codepage = f"cp{windll.kernel32.GetConsoleOutputCP()}"
+                    gx_stdout_str = gx_stdout_bytes.decode(encoding=codepage).split('\r\n')
+                else:
+                    gx_stdout_str = gx_stdout_bytes.decode(encoding=locale.getpreferredencoding(False)).split('\r\n')
+            except:
+                gx_stdout_str = gx_stdout_bytes.decode(errors="replace").split('\r\n')
+
+        errors = [error for error in gx_stdout_str if ("Import Warning" in error) or ("Error" in error)]
         if len(errors) > 0:
             self.report({'ERROR'}, "GxModelViewer warnings/errors occured: " + "\n".join(errors))
         
-        print(gx_result.stdout.decode())
+        print('\n'.join(gx_stdout_str))
         
         return {'FINISHED'}
 
@@ -1256,11 +1275,26 @@ class OBJECT_OT_export_stagedef(bpy.types.Operator):
             self.report({'ERROR'}, f"SMB Workshop 2 failed to run. See the console for more details.")
             return {'CANCELLED'}
 
-        errors = [error for error in ws_result.stdout.decode().split('\n') if ("Critical" in error) or ("Error" in error) or ("Warning" in error)]
+        ws_stdout_bytes = ws_result.stdout
+
+        try:
+            ws_stdout_str = ws_stdout_bytes.decode().split('\r\n')
+        except UnicodeDecodeError:
+            try:
+                if sys.platform == 'win32':
+                    codepage = f"cp{windll.kernel32.GetConsoleOutputCP()}"
+                    ws_stdout_str = ws_stdout_bytes.decode(encoding=codepage).split('\r\n')
+                else:
+                    ws_stdout_str = ws_stdout_bytes.decode(encoding=locale.getpreferredencoding(False)).split('\r\n')
+
+            except:
+                ws_stdout_str = ws_stdout_bytes.decode(errors="replace").split('\r\n')
+
+        errors = [error for error in ws_stdout_str if ("Critical" in error) or ("Error" in error) or ("Warning" in error)]
         if len(errors) > 0:
             self.report({'ERROR'}, "Workshop 2 warnings/errors occurred: " + "\n".join(errors))
 
-        print(ws_result.stdout.decode())
+        print('\n'.join(ws_stdout_str))
 
         return {'FINISHED'}
 
