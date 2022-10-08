@@ -13,10 +13,12 @@ bl_info = {
     "name": "BlendToSMBStage2",
     "description": "Addon for creating Super Monkey Ball stage configuration files",
     "author": "CraftedCart, The BombSquad",
-    "version": (2, 0),
-    "blender": (2, 82, 7), 
-    "location": "View3D",
+    "version": (2, 1),
+    "blender": (3, 3, 0), 
+    "location": "\"Blend2SMB\" vertical tab in 3D viewport",
     "category": "3D View",
+    "doc_url": "https://docs.google.com/document/d/194QZxrimkjHEzSSMKbafs86PnmiYmFBZUnoaEnks4es",
+    "tracker_url": "https://b2smb.bombsquad.xyz",
 }
 
 # Load and reload submodules
