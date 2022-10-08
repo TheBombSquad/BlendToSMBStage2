@@ -14,7 +14,7 @@ import locale
 
 from . import statics, stage_object_drawing, generate_config, dimension_dict
 from .descriptors import descriptors, descriptor_item_group, descriptor_model_stage, descriptor_track_path
-from bpy.props import BoolProperty, PointerProperty, EnumProperty, FloatProperty, IntProperty
+from bpy.props import BoolProperty, PointerProperty, EnumProperty, FloatProperty, FloatVectorProperty, IntProperty
 from enum import Enum
 from sys import platform
 from mathutils import Vector, Matrix
@@ -220,54 +220,73 @@ class OBJECT_OT_collision_grid_fit(bpy.types.Operator):
     bl_idname = "object.collision_grid_fit"
     bl_label = "Fit Collision Grid"
     bl_description = "Fits the collision grid for an item group to the geometry of its models. Does not adjust step count, use the subdivision tool to assign the step count as per the complexity."
-    bl_options = {'UNDO'}
+    bl_options = {'UNDO', 'REGISTER'}
+
+    pos: FloatVectorProperty(name="Position", size=2) 
+    dimensions: FloatVectorProperty(name="Dimensions", min=0.0, size=2)
+    margin: FloatProperty(name="Margin (%)", default=10, soft_max=100, soft_min=100, subtype="PERCENTAGE")
+    auto_fit: BoolProperty(name="Auto-fit", default=True)
 
     def execute(self, context):
         active_obj = bpy.context.active_object
 
-        total_max_x = None
-        total_min_x = None
-        total_max_y = None
-        total_min_y = None
+        if self.auto_fit:
+            total_max_x = None
+            total_min_x = None
+            total_max_y = None
+            total_min_y = None
 
-        # Get the min/max X/Y worldspace coordinates for the vertices of the IG and its children
-        obj_check_list = [active_obj, *active_obj.children]
-        for obj in obj_check_list:
-            if obj.data is None: continue
+            # Get the min/max X/Y worldspace coordinates for the vertices of the IG and its children
+            obj_check_list = [active_obj, *active_obj.children]
+            for obj in obj_check_list:
+                # Handle meshes
+                if obj.data is not None:
+                    bm = bmesh.new()
+                    bm.from_mesh(obj.data)
 
-            bm = bmesh.new()
-            bm.from_mesh(obj.data)
+                    obj_world_mtx = obj.matrix_world
+                    obj_world_verts = [(obj_world_mtx @ vert.co) for vert in bm.verts]
+                    obj_x_verts = [vert[0] for vert in obj_world_verts]
+                    obj_y_verts = [vert[1] for vert in obj_world_verts]
 
-            obj_world_mtx = obj.matrix_world
-            obj_world_verts = [(obj_world_mtx @ vert.co) for vert in bm.verts]
-            obj_x_verts = [vert[0] for vert in obj_world_verts]
-            obj_y_verts = [vert[1] for vert in obj_world_verts]
+                    max_x = max(obj_x_verts)
+                    min_x = min(obj_x_verts)
+                    max_y = max(obj_y_verts)
+                    min_y = min(obj_y_verts)
 
-            max_x = max(obj_x_verts)
-            min_x = min(obj_x_verts)
-            max_y = max(obj_y_verts)
-            min_y = min(obj_y_verts)
+                    bm.free()
 
-            if (total_max_x is None) or (max_x > total_max_x): total_max_x = max_x
-            if (total_min_x is None) or (min_x < total_min_x): total_min_x = min_x
-            if (total_max_y is None) or (max_y > total_max_y): total_max_y = max_y
-            if (total_min_y is None) or (min_y < total_min_y): total_min_y = min_y
+                # If the object has no data (is a placeable), we assume it to be 5m x 5m
+                if obj.data is None: 
+                    obj_pos = obj.matrix_world.to_translation()
+                    max_x = obj_pos.x + 5 
+                    min_x = obj_pos.x - 5 
+                    max_y = obj_pos.y + 5
+                    min_y = obj_pos.y - 5
 
-            bm.free()
+                if (total_max_x is None) or (max_x > total_max_x): total_max_x = max_x
+                if (total_min_x is None) or (min_x < total_min_x): total_min_x = min_x
+                if (total_max_y is None) or (max_y > total_max_y): total_max_y = max_y
+                if (total_min_y is None) or (min_y < total_min_y): total_min_y = min_y
 
-        dimensions = Vector(((total_max_x-total_min_x), (total_max_y-total_min_y)))
+            self.dimensions = Vector((
+                    (total_max_x-total_min_x), 
+                    (total_max_y-total_min_y)
+                    ))
 
-        active_obj["collisionStartX"] = total_min_x - (dimensions.x*0.1)
-        active_obj["collisionStartY"] = -1*(total_max_y + (dimensions.y*0.1))   # Adjust for SMB coordinate system
-        active_obj["collisionStepX"] = (dimensions.x*1.2) / active_obj["collisionStepCountX"]
-        active_obj["collisionStepY"] = (dimensions.y*1.2) / active_obj["collisionStepCountY"]
+            self.pos = Vector((
+                     total_min_x - (self.dimensions[0]*(0.5*self.margin/100)), 
+                     total_max_y + (self.dimensions[1]*(0.5*self.margin/100)) 
+                    ))
 
-        # Update visual property preview TODO: Don't rely on this having to be implemented manually
-        active_obj.item_group_properties.collisionStartX = active_obj["collisionStartX"]
-        active_obj.item_group_properties.collisionStartY = active_obj["collisionStartY"]
-        active_obj.item_group_properties.collisionStepX = active_obj["collisionStepX"]
-        active_obj.item_group_properties.collisionStepY = active_obj["collisionStepY"]
+            self.dimensions = Vector(self.dimensions) * (1+self.margin/100)
 
+        active_obj["collisionStartX"] = self.pos[0]
+        active_obj["collisionStartY"] = -1*(self.pos[1])   # Adjust for SMB coordinate system
+        active_obj["collisionStepX"] = self.dimensions[0] / active_obj["collisionStepCountX"]
+        active_obj["collisionStepY"] = self.dimensions[1] / active_obj["collisionStepCountY"]
+
+        updateUIProps(active_obj)
 
         return {'FINISHED'}
 
