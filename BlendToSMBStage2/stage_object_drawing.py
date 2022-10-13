@@ -322,10 +322,12 @@ def draw_switch(obj):
     bgl.glLineWidth(6)
     draw_cylinder(ZERO_VEC, rotation_rad, 0.925, 0.15, 8, COLOR_BLACK)
     draw_cylinder(ZERO_VEC, rotation_rad, 0.725, 0.15, 8, COLOR_BLACK)
-
+    draw_arrow(ZERO_VEC, (0.0, 1.5, 0.0), COLOR_BLACK)
+    
     bgl.glLineWidth(2)
     draw_cylinder(ZERO_VEC, rotation_rad, 0.925, 0.15, 8, COLOR_BLUE)
     draw_cylinder(ZERO_VEC, rotation_rad, 0.725, 0.15, 8, COLOR_BLUE)
+    draw_arrow(ZERO_VEC, (0.0, 1.5, 0.0), COLOR_BLUE)
     
     gpu.matrix.pop()
 
