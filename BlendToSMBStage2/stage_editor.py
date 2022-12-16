@@ -1450,7 +1450,7 @@ class OBJECT_OT_export_background(bpy.types.Operator):
         return {'FINISHED'}
 
 # Function for appending all imported background objects in an XML to a config root
-def append_imported_bg_objects(self, context, bg_root, dest_root, obj_names):
+def append_imported_bg_objects(self, context, imported_xml_root, destination_root, obj_names):
     # There's lots of wacky axis swapping going on here so make sure to pay attention to that
 
     # Converts an XML attribute list from Blender coordinates to SMB coordinates,
@@ -1463,17 +1463,20 @@ def append_imported_bg_objects(self, context, bg_root, dest_root, obj_names):
     # Converts an XML attribute list from radians to degrees
     convert_to_degrees = lambda v: Vector((math.degrees(v[0]), math.degrees(v[1]), math.degrees(v[2])))
 
-    for index, imported_bg_model in enumerate(list(bg_root)):
-        name = imported_bg_model.find('name')
-        imported_name = "[EXT_IMPORTED:" + name.text + ":" + str(index) + "]"
+    for index, imported_bg_model in enumerate(list(imported_xml_root)):
+        xml_name = imported_bg_model.find('name')
+        blender_name = "[EXT_IMPORTED:" + xml_name.text + ":" + str(index) + "]"
 
-        print(f"Exporting imported background object {imported_name}...")
+        print(f"\tExporting imported background object {blender_name}...")
 
-        # Special handling if the object was imported as a visual preview and potentially modified
-        if imported_name in obj_names:
-            imported_object = context.scene.objects[imported_name]
+        # If we're using background previews, check to see if the object exists, if it doesn't, it was probably deleted
+        if context.scene.background_import_preview:
+            if blender_name in obj_names:
+                imported_blender_object = context.scene.objects[blender_name]
+            else:
+                continue
         else:
-            imported_object = None
+            imported_blender_object = None
 
         # Grabs the original pos/rot/scale from the imported XML file
         # The XML background is expected to provide vectors in SMB's coordinate system, so we do not convert here
@@ -1484,12 +1487,11 @@ def append_imported_bg_objects(self, context, bg_root, dest_root, obj_names):
         # Handles position of imported BG object
         bg_pos = imported_bg_model.find('position').attrib
 
-        # Special handling if the object was imported as a visual preview and potentially modified
-
-        if imported_object is None:
+        # If no empties were imported, we can just rely on the original position
+        if imported_blender_object is None:
             current_bg_pos = orig_pos
         else:
-            current_bg_pos = convert_to_smb_coords(imported_object.location, True)
+            current_bg_pos = convert_to_smb_coords(imported_blender_object.location, True)
 
         bg_pos['x'] = str(current_bg_pos[0])
         bg_pos['y'] = str(current_bg_pos[1])
@@ -1498,10 +1500,11 @@ def append_imported_bg_objects(self, context, bg_root, dest_root, obj_names):
         # Handles rotation of imported BG object
         bg_rot = imported_bg_model.find('rotation').attrib
 
-        if imported_object is None:
+        # If no empties were imported, we can just rely on the original position
+        if imported_blender_object is None:
             current_bg_rot = orig_rot
         else:
-            current_bg_rot = convert_to_smb_coords(convert_to_degrees(imported_object.rotation_euler), True)
+            current_bg_rot = convert_to_smb_coords(convert_to_degrees(imported_blender_object.rotation_euler), True)
 
         bg_rot['x'] = str(current_bg_rot[0])
         bg_rot['y'] = str(current_bg_rot[1])
@@ -1510,36 +1513,37 @@ def append_imported_bg_objects(self, context, bg_root, dest_root, obj_names):
         # Handles scale of imported BG object
         bg_scale = imported_bg_model.find('scale').attrib
 
-        # Special handling if the object was imported as a visual preview and potentially modified
+        # If no empties were imported, we can just rely on the original position
         # Also special handling for the case of cube empty approximations, which are scaled to their in-game
         # dimensions. Since this effect is achieved through scaling, this is accounted for here, and the scaling
         # is un-done.
-        if imported_object is None:
+        if imported_blender_object is None:
             current_bg_scale = orig_scale
         else:
             bg_dimensions = Vector((1, 1, 1))
-            if name.text in dimension_dict.dimensions.keys():
-                bg_dimensions = dimension_dict.dimensions[name.text]
 
-            adjusted_scale = Vector((imported_object.scale[0]/bg_dimensions[0],
-                                     imported_object.scale[1]/bg_dimensions[2],
-                                     imported_object.scale[2]/bg_dimensions[1]))
+            if xml_name.text in dimension_dict.dimensions.keys():
+                bg_dimensions = dimension_dict.dimensions[xml_name.text]
+
+            adjusted_scale = Vector((imported_blender_object.scale[0]/bg_dimensions[0],
+                                     imported_blender_object.scale[1]/bg_dimensions[2],
+                                     imported_blender_object.scale[2]/bg_dimensions[1]))
             current_bg_scale = convert_to_smb_coords(adjusted_scale, False)
 
         bg_scale['x'] = str(current_bg_scale[0])
         bg_scale['y'] = str(current_bg_scale[1])
         bg_scale['z'] = str(current_bg_scale[2])
 
-        # For imported effects
+        # Handles imported effects
         effects = imported_bg_model.find('effectKeyframes')
         if effects is not None:
             for effect in effects:
                 if effect.tag == 'effectType1':
                     for j, ef1 in enumerate(list(effect)):
-                        imported_name = "[EXT_IMPORTED_FX:" + name.text + ":" + str(index) + ":" + str(j) + "]"
+                        blender_name = "[EXT_IMPORTED_FX:" + xml_name.text + ":" + str(index) + ":" + str(j) + "]"
 
-                        if imported_name in obj_names:
-                            effect_obj = context.scene.objects[imported_name]
+                        if blender_name in obj_names:
+                            effect_obj = context.scene.objects[blender_name]
                         else:
                             effect_obj = None
 
@@ -1555,10 +1559,10 @@ def append_imported_bg_objects(self, context, bg_root, dest_root, obj_names):
 
                 elif effect.tag == 'effectType2':
                     for j, ef2 in enumerate(list(effect)):
-                        imported_name = "[EXT_IMPORTED_FX:" + name.text + ":" + str(index) + ":" + str(j) + "]"
+                        blender_name = "[EXT_IMPORTED_FX:" + xml_name.text + ":" + str(index) + ":" + str(j) + "]"
 
-                        if imported_name in obj_names:
-                            effect_obj = context.scene.objects[imported_name]
+                        if blender_name in obj_names:
+                            effect_obj = context.scene.objects[blender_name]
                         else:
                             effect_obj = None
 
@@ -1571,8 +1575,9 @@ def append_imported_bg_objects(self, context, bg_root, dest_root, obj_names):
 
         anim = imported_bg_model.find('animKeyframes')
 
-        # For updating all animation keyframes for imported object previews
-        if anim is not None and imported_object is not None:
+        # Handles updating all animation keyframes for imported object previews
+        # TODO: Not perfect! Need to handle object translations properly...
+        if anim is not None and imported_blender_object is not None:
             # For imported objects, determine how much the object has moved from its original position, so this change
             # can be applied to animation keyframes.
             pos_delta = current_bg_pos - orig_pos
@@ -1595,7 +1600,7 @@ def append_imported_bg_objects(self, context, bg_root, dest_root, obj_names):
                                 keyframe.attrib['value'] = str(float(keyframe.attrib['value']) * delta)
                         break
 
-        dest_root.append(imported_bg_model)
+        destination_root.append(imported_bg_model)
 
 # Operator for exporting the stage config as a .XML file
 class OBJECT_OT_generate_config(bpy.types.Operator):

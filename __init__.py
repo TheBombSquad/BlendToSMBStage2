@@ -368,7 +368,8 @@ def register():
             default=""
     )
     bpy.types.Scene.background_import_preview = bpy.props.BoolProperty(
-            name="Import Background Previews",
+            name="Import/Use Background Previews",
+            description="Whether to use empties to preview/modify background objects imported from a .XML",
             default=False
     )
     bpy.types.Scene.background_import_use_cubes = bpy.props.BoolProperty(
