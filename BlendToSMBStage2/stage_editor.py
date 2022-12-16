@@ -678,7 +678,7 @@ class MATERIAL_OT_set_material_flags(bpy.types.Operator):
 
         return {'FINISHED'}
 
-# Callback function for drawing stage objects
+# Callback function for drawing stage objects, as well as the fallout plane grid
 def draw_callback_3d(self, context):
     bgl.glEnable(bgl.GL_BLEND)
     bgl.glEnable(bgl.GL_DEPTH_TEST)

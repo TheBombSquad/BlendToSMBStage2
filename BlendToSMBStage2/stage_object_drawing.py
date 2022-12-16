@@ -411,7 +411,10 @@ def draw_ig(obj, draw_collision_grid):
 
     for conveyorObject in conveyorObjects:
         gpu.matrix.push()
-        gpu.matrix.multiply_matrix(conveyorObject.matrix_world)
+
+        # Conveyors vectors are absolute, so we don't apply the entire IG transform to them
+        gpu.matrix.translate(conveyorObject.matrix_world.to_translation())
+
         if 0 not in conveyorObject.scale:
             gpu.matrix.scale((1/conveyorObject.scale.x, 1/conveyorObject.scale.y, 1/conveyorObject.scale.z)) # No scaling
         lineWidth = [(6, COLOR_BLACK), (2, COLOR_GREEN)]
