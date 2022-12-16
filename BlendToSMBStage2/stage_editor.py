@@ -902,12 +902,14 @@ class OBJECT_OT_drop_selected_objects(bpy.types.Operator):
             if cast[0]:
                 height = 0.0 
 
-                if "[BANANA_S]" in object.name: 
+                if "[START]" in object.name or "[BANANA_S]" in object.name:
                     height = 0.5
                 elif "[BANANA_B]" in object.name:
                     height = 1.0 
                 elif "[SPHERE_COL]" in object.name:
                     height = object.scale.x
+                elif "[CYLINDER_COL]" in object.name or "[FALLOUT_VOL]" in object.name:
+                    height = object.scale.z/2
 
                 normal = cast[2]
                 object.location = cast[1]
