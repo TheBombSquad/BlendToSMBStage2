@@ -224,7 +224,7 @@ class OBJECT_OT_collision_grid_fit(bpy.types.Operator):
 
     pos: FloatVectorProperty(name="Position", size=2) 
     dimensions: FloatVectorProperty(name="Dimensions", min=0.0, size=2)
-    margin: FloatProperty(name="Margin (%)", default=10, soft_max=100, soft_min=100, subtype="PERCENTAGE")
+    margin: FloatProperty(name="Margin (%)", default=50, soft_max=200, soft_min=0, subtype="PERCENTAGE")
     auto_fit: BoolProperty(name="Auto-fit", default=True)
 
     def execute(self, context):
