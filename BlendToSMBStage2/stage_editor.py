@@ -1,12 +1,10 @@
 import bpy
 import bgl
 import bmesh
-import enum
 import os
 import copy
 import subprocess
 import sys
-import mathutils
 import random
 import math
 import re
@@ -15,14 +13,11 @@ import locale
 from . import statics, stage_object_drawing, generate_config, dimension_dict
 from .descriptors import descriptors, descriptor_item_group, descriptor_model_stage, descriptor_track_path
 from bpy.props import BoolProperty, PointerProperty, EnumProperty, FloatProperty, FloatVectorProperty, IntProperty
-from enum import Enum
 from sys import platform
 from mathutils import Vector, Matrix
 
-if platform == "linux" or platform == "linux2":
-    from lxml import etree
-else:
-    import xml.etree.ElementTree as etree
+import xml.etree.ElementTree as etree
+import xml.dom.minidom as minidom
 
 # To handle encoding shenanigans when we run GX/WS as subprocesses
 if platform == "win32":
@@ -257,7 +252,7 @@ class OBJECT_OT_collision_grid_fit(bpy.types.Operator):
                     bm.free()
 
                 # If the object has no data (is a placeable), we assume it to be 5m x 5m
-                if obj.data is None: 
+                else:
                     obj_pos = obj.matrix_world.to_translation()
                     max_x = obj_pos.x + 5 
                     min_x = obj_pos.x - 5 
@@ -1436,13 +1431,12 @@ class OBJECT_OT_export_background(bpy.types.Operator):
 
         print("Completed, saving...")
 
-        if platform == "linux" or platform == "linux2":
-            config = etree.tostring(root, pretty_print=True, encoding="unicode")
-        else:
-            config = etree.tostring(root, encoding="unicode")
+        config_string = etree.tostring(root, encoding="unicode")
+        config_dom = minidom.parseString(config_string)
+        config_string_pretty = config_dom.toprettyxml()
 
         config_file = open(bpy.path.abspath(context.scene.export_background_path), "w")
-        config_file.write(config)
+        config_file.write(config_string_pretty)
         config_file.close()
 
         print("Finished generating config")
