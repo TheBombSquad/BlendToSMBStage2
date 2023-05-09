@@ -1266,7 +1266,7 @@ class OBJECT_OT_export_stagedef(bpy.types.Operator):
         raw_stagedef_path = bpy.path.abspath(context.scene.export_raw_stagedef_path)
 
         if platform == "linux" or platform == "linux2":
-            ws_path = bpy.utils.script_path_user() + "/addons/BlendToSMBStage2/ws2lzfrontend/ws2lzfrontend"
+            ws_path = bpy.utils.script_path_user() + "/addons/BlendToSMBStage2/ws2lzfrontend/bin/ws2lzfrontend"
         else:
             ws_path = bpy.utils.script_path_user() + "/addons/BlendToSMBStage2/ws2lzfrontend/ws2lzfrontend.exe"
 
@@ -1790,12 +1790,13 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
             append_imported_bg_objects(self, context, bg_root, root, obj_names)
 
         print("Completed, saving...")
-        if platform == "linux" or platform == "linux2":
-            config = etree.tostring(root, pretty_print=True, encoding="unicode")
-        else:
-            config = etree.tostring(root, encoding="unicode")
-        config_file = open(bpy.path.abspath(context.scene.export_config_path), "w")
-        config_file.write(config)
+
+        config_string = etree.tostring(root, encoding="unicode")
+        config_dom = minidom.parseString(config_string)
+        config_string_pretty = config_dom.toprettyxml()
+
+        config_file = open(bpy.path.abspath(context.scene.export_background_path), "w")
+        config_file.write(config_string_pretty)
         config_file.close()
         print("Finished generating config")
 
