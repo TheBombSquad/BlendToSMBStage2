@@ -1,3 +1,5 @@
+import stat
+
 import bpy
 import bgl
 import bmesh
@@ -1191,7 +1193,12 @@ class OBJECT_OT_export_gmatpl(bpy.types.Operator):
         obj_path = bpy.path.abspath(context.scene.export_model_path)
         gma_path = bpy.path.abspath(context.scene.export_gma_path)
         tpl_path = bpy.path.abspath(context.scene.export_tpl_path)
-        gx_path = bpy.utils.script_path_user() + "/addons/BlendToSMBStage2/GxUtils/GxModelViewer.exe"
+
+        if platform == "linux" or platform == "linux2":
+            gx_path = bpy.utils.script_path_user() + "/addons/BlendToSMBStage2/GxUtils/GxModelViewer"
+        else:
+            gx_path = bpy.utils.script_path_user() + "/addons/BlendToSMBStage2/GxUtils/GxModelViewer.exe"
+
         preset_path = bpy.path.abspath(context.scene.gx_preset_path)
 
         args = []
@@ -1220,8 +1227,11 @@ class OBJECT_OT_export_gmatpl(bpy.types.Operator):
         try:
             gx_result = subprocess.run(args, capture_output=True)
         except PermissionError:
-            self.report({'ERROR'}, f"GxModelViewer does not have the correct permissions to run. \nPlease set executable permissions on:\n{gx_path}")
-            return {'CANCELLED'}
+            try:
+                os.chmod(gx_path, stat.S_IEXEC)  # attempt to set execute permissions for the owner
+            except:
+                self.report({'ERROR'}, f"GxModelViewer does not have the correct permissions to run. \nPlease set executable permissions on:\n{gx_path}")
+                return {'CANCELLED'}
         except:
             self.report({'ERROR'}, f"GxModelViewer failed to run. See the console for more details.")
             return {'CANCELLED'}
@@ -1285,8 +1295,11 @@ class OBJECT_OT_export_stagedef(bpy.types.Operator):
         try:
             ws_result = subprocess.run(command_args, capture_output=True)
         except PermissionError:
-            self.report({'ERROR'}, f"SMB Workshop 2 does not have the correct permissions to run. \nPlease set executable permissions on:\n{ws_path}")
-            return {'CANCELLED'}
+            try:
+                os.chmod(ws_path, stat.S_IEXEC)  # attempt to set execute permissions for the owner
+            except:
+                self.report({'ERROR'}, f"SMB Workshop 2 does not have the correct permissions to run. \nPlease set executable permissions on:\n{ws_path}")
+                return {'CANCELLED'}
         except:
             self.report({'ERROR'}, f"SMB Workshop 2 failed to run. See the console for more details.")
             return {'CANCELLED'}
