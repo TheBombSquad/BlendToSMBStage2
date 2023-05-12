@@ -5,10 +5,7 @@ from sys import platform
 
 from mathutils import Vector
 
-if platform == "linux" or platform == "linux2":
-    from lxml import etree
-else:
-    import xml.etree.ElementTree as etree
+import xml.etree.ElementTree as etree
 
 # Generate an object entry with any of the following: position, rotation, scale 
 def generate_generic_obj_element(obj, obj_type, parent, *, position=False, rotation=False, scale=False, name=True, static_bg=False):
