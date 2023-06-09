@@ -1,5 +1,4 @@
 import stat
-
 import bpy
 import bgl
 import bmesh
@@ -1229,6 +1228,7 @@ class OBJECT_OT_export_gmatpl(bpy.types.Operator):
         except PermissionError:
             try:
                 os.chmod(gx_path, stat.S_IEXEC)  # attempt to set execute permissions for the owner
+                gx_result = subprocess.run(args, capture_output=True)
             except:
                 self.report({'ERROR'}, f"GxModelViewer does not have the correct permissions to run. \nPlease set executable permissions on:\n{gx_path}")
                 return {'CANCELLED'}
@@ -1297,6 +1297,7 @@ class OBJECT_OT_export_stagedef(bpy.types.Operator):
         except PermissionError:
             try:
                 os.chmod(ws_path, stat.S_IEXEC)  # attempt to set execute permissions for the owner
+                ws_result = subprocess.run(command_args, capture_output=True)
             except:
                 self.report({'ERROR'}, f"SMB Workshop 2 does not have the correct permissions to run. \nPlease set executable permissions on:\n{ws_path}")
                 return {'CANCELLED'}
