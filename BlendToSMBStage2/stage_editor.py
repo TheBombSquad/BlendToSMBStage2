@@ -1809,7 +1809,7 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
         config_dom = minidom.parseString(config_string)
         config_string_pretty = config_dom.toprettyxml()
 
-        config_file = open(bpy.path.abspath(context.scene.export_background_path), "w")
+        config_file = open(bpy.path.abspath(context.scene.export_config_path), "w")
         config_file.write(config_string_pretty)
         config_file.close()
         print("Finished generating config")
