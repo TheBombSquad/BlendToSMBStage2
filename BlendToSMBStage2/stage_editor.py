@@ -1227,7 +1227,7 @@ class OBJECT_OT_export_gmatpl(bpy.types.Operator):
             gx_result = subprocess.run(args, capture_output=True)
         except PermissionError:
             try:
-                os.chmod(gx_path, stat.S_IEXEC)  # attempt to set execute permissions for the owner
+                os.chmod(gx_path, stat.S_IRWXU | stat.S_IROTH | stat.S_IRGRP)  # attempt to set execute permissions for the owner
                 gx_result = subprocess.run(args, capture_output=True)
             except:
                 self.report({'ERROR'}, f"GxModelViewer does not have the correct permissions to run. \nPlease set executable permissions on:\n{gx_path}")
@@ -1296,7 +1296,7 @@ class OBJECT_OT_export_stagedef(bpy.types.Operator):
             ws_result = subprocess.run(command_args, capture_output=True)
         except PermissionError:
             try:
-                os.chmod(ws_path, stat.S_IEXEC)  # attempt to set execute permissions for the owner
+                os.chmod(ws_path, stat.S_IRWXU | stat.S_IROTH | stat.S_IRGRP)  # attempt to set execute permissions for the owner
                 ws_result = subprocess.run(command_args, capture_output=True)
             except:
                 self.report({'ERROR'}, f"SMB Workshop 2 does not have the correct permissions to run. \nPlease set executable permissions on:\n{ws_path}")
