@@ -1,28 +1,31 @@
 import itertools
+import stat
 import bpy
 import bgl
 import bmesh
-import enum
 import os
 import copy
 import subprocess
 import sys
-import mathutils
 import random
 import math
 import re
+import locale
 
 from . import statics, stage_object_drawing, generate_config, dimension_dict
+
 from .descriptors import descriptors, descriptor_item_group, descriptor_model_stage, descriptor_track_path, descriptor_model_bg, descriptor_model_fg
-from bpy.props import BoolProperty, PointerProperty, EnumProperty, FloatProperty, IntProperty
+from bpy.props import BoolProperty, PointerProperty, EnumProperty, FloatProperty, FloatVectorProperty, ntProperty
 from enum import Enum
 from sys import platform
 from mathutils import Vector, Matrix
 
-if platform == "linux" or platform == "linux2":
-    from lxml import etree
-else:
-    import xml.etree.ElementTree as etree
+import xml.etree.ElementTree as etree
+import xml.dom.minidom as minidom
+
+# To handle encoding shenanigans when we run GX/WS as subprocesses
+if platform == "win32":
+    from ctypes import windll
 
 # Operator for adding external background objects
 class OBJECT_OT_add_external_objects(bpy.types.Operator):
@@ -101,7 +104,7 @@ class OBJECT_OT_convert_selected(bpy.types.Operator):
 
         # Clear active properties
         if self.prefix not in no_replace:
-            for key in selected.keys():
+            for key in list(selected.keys()):
                 del selected[key]
 
         # Remove existing prefixes
@@ -115,6 +118,8 @@ class OBJECT_OT_convert_selected(bpy.types.Operator):
         for desc in descriptors.descriptors:
             if selected.name.startswith(desc.get_object_name()): 
                 desc.construct(selected)
+
+        updateUIProps(selected)
 
         return {'FINISHED'}
 
@@ -214,54 +219,73 @@ class OBJECT_OT_collision_grid_fit(bpy.types.Operator):
     bl_idname = "object.collision_grid_fit"
     bl_label = "Fit Collision Grid"
     bl_description = "Fits the collision grid for an item group to the geometry of its models. Does not adjust step count, use the subdivision tool to assign the step count as per the complexity."
-    bl_options = {'UNDO'}
+    bl_options = {'UNDO', 'REGISTER'}
+
+    pos: FloatVectorProperty(name="Position", size=2) 
+    dimensions: FloatVectorProperty(name="Dimensions", min=0.0, size=2)
+    margin: FloatProperty(name="Margin (%)", default=50, soft_max=200, soft_min=0, subtype="PERCENTAGE")
+    auto_fit: BoolProperty(name="Auto-fit", default=True)
 
     def execute(self, context):
         active_obj = bpy.context.active_object
 
-        total_max_x = None
-        total_min_x = None
-        total_max_y = None
-        total_min_y = None
+        if self.auto_fit:
+            total_max_x = None
+            total_min_x = None
+            total_max_y = None
+            total_min_y = None
 
-        # Get the min/max X/Y worldspace coordinates for the vertices of the IG and its children
-        obj_check_list = [active_obj, *active_obj.children]
-        for obj in obj_check_list:
-            if obj.data is None: continue
+            # Get the min/max X/Y worldspace coordinates for the vertices of the IG and its children
+            obj_check_list = [active_obj, *active_obj.children]
+            for obj in obj_check_list:
+                # Handle meshes
+                if obj.data is not None:
+                    bm = bmesh.new()
+                    bm.from_mesh(obj.data)
 
-            bm = bmesh.new()
-            bm.from_mesh(obj.data)
+                    obj_world_mtx = obj.matrix_world
+                    obj_world_verts = [(obj_world_mtx @ vert.co) for vert in bm.verts]
+                    obj_x_verts = [vert[0] for vert in obj_world_verts]
+                    obj_y_verts = [vert[1] for vert in obj_world_verts]
 
-            obj_world_mtx = obj.matrix_world
-            obj_world_verts = [(obj_world_mtx @ vert.co) for vert in bm.verts]
-            obj_x_verts = [vert[0] for vert in obj_world_verts]
-            obj_y_verts = [vert[1] for vert in obj_world_verts]
+                    max_x = max(obj_x_verts)
+                    min_x = min(obj_x_verts)
+                    max_y = max(obj_y_verts)
+                    min_y = min(obj_y_verts)
 
-            max_x = max(obj_x_verts)
-            min_x = min(obj_x_verts)
-            max_y = max(obj_y_verts)
-            min_y = min(obj_y_verts)
+                    bm.free()
 
-            if (total_max_x is None) or (max_x > total_max_x): total_max_x = max_x
-            if (total_min_x is None) or (min_x < total_min_x): total_min_x = min_x
-            if (total_max_y is None) or (max_y > total_max_y): total_max_y = max_y
-            if (total_min_y is None) or (min_y < total_min_y): total_min_y = min_y
+                # If the object has no data (is a placeable), we assume it to be 5m x 5m
+                else:
+                    obj_pos = obj.matrix_world.to_translation()
+                    max_x = obj_pos.x + 5 
+                    min_x = obj_pos.x - 5 
+                    max_y = obj_pos.y + 5
+                    min_y = obj_pos.y - 5
 
-            bm.free()
+                if (total_max_x is None) or (max_x > total_max_x): total_max_x = max_x
+                if (total_min_x is None) or (min_x < total_min_x): total_min_x = min_x
+                if (total_max_y is None) or (max_y > total_max_y): total_max_y = max_y
+                if (total_min_y is None) or (min_y < total_min_y): total_min_y = min_y
 
-        dimensions = Vector(((total_max_x-total_min_x), (total_max_y-total_min_y)))
+            self.dimensions = Vector((
+                    (total_max_x-total_min_x), 
+                    (total_max_y-total_min_y)
+                    ))
 
-        active_obj["collisionStartX"] = total_min_x - (dimensions.x*0.1)
-        active_obj["collisionStartY"] = -1*(total_max_y + (dimensions.y*0.1))   # Adjust for SMB coordinate system
-        active_obj["collisionStepX"] = (dimensions.x*1.2) / active_obj["collisionStepCountX"]
-        active_obj["collisionStepY"] = (dimensions.y*1.2) / active_obj["collisionStepCountY"]
+            self.pos = Vector((
+                     total_min_x - (self.dimensions[0]*(0.5*self.margin/100)), 
+                     total_max_y + (self.dimensions[1]*(0.5*self.margin/100)) 
+                    ))
 
-        # Update visual property preview TODO: Don't rely on this having to be implemented manually
-        active_obj.item_group_properties.collisionStartX = active_obj["collisionStartX"]
-        active_obj.item_group_properties.collisionStartY = active_obj["collisionStartY"]
-        active_obj.item_group_properties.collisionStepX = active_obj["collisionStepX"]
-        active_obj.item_group_properties.collisionStepY = active_obj["collisionStepY"]
+            self.dimensions = Vector(self.dimensions) * (1+self.margin/100)
 
+        active_obj["collisionStartX"] = self.pos[0]
+        active_obj["collisionStartY"] = -1*(self.pos[1])   # Adjust for SMB coordinate system
+        active_obj["collisionStepX"] = self.dimensions[0] / active_obj["collisionStepCountX"]
+        active_obj["collisionStepY"] = self.dimensions[1] / active_obj["collisionStepCountY"]
+
+        updateUIProps(active_obj)
 
         return {'FINISHED'}
 
@@ -653,7 +677,7 @@ class MATERIAL_OT_set_material_flags(bpy.types.Operator):
 
         return {'FINISHED'}
 
-# Callback function for drawing stage objects
+# Callback function for drawing stage objects, as well as the fallout plane grid
 def draw_callback_3d(self, context):
     bgl.glEnable(bgl.GL_BLEND)
     bgl.glEnable(bgl.GL_DEPTH_TEST)
@@ -877,12 +901,14 @@ class OBJECT_OT_drop_selected_objects(bpy.types.Operator):
             if cast[0]:
                 height = 0.0 
 
-                if "[BANANA_S]" in object.name: 
+                if "[START]" in object.name or "[BANANA_S]" in object.name:
                     height = 0.5
                 elif "[BANANA_B]" in object.name:
                     height = 1.0 
                 elif "[SPHERE_COL]" in object.name:
                     height = object.scale.x
+                elif "[CYLINDER_COL]" in object.name or "[FALLOUT_VOL]" in object.name:
+                    height = object.scale.z/2
 
                 normal = cast[2]
                 object.location = cast[1]
@@ -1169,7 +1195,12 @@ class OBJECT_OT_export_gmatpl(bpy.types.Operator):
         obj_path = bpy.path.abspath(context.scene.export_model_path)
         gma_path = bpy.path.abspath(context.scene.export_gma_path)
         tpl_path = bpy.path.abspath(context.scene.export_tpl_path)
-        gx_path = bpy.utils.script_path_user() + "/addons/BlendToSMBStage2/GxUtils/GxModelViewer.exe"
+
+        if platform == "linux" or platform == "linux2":
+            gx_path = bpy.utils.script_path_user() + "/addons/BlendToSMBStage2/GxUtils/GxModelViewer"
+        else:
+            gx_path = bpy.utils.script_path_user() + "/addons/BlendToSMBStage2/GxUtils/GxModelViewer.exe"
+
         preset_path = bpy.path.abspath(context.scene.gx_preset_path)
 
         args = []
@@ -1198,18 +1229,36 @@ class OBJECT_OT_export_gmatpl(bpy.types.Operator):
         try:
             gx_result = subprocess.run(args, capture_output=True)
         except PermissionError:
-            self.report({'ERROR'}, f"GxModelViewer does not have the correct permissions to run. \nPlease set executable permissions on:\n{gx_path}")
-            return {'CANCELLED'}
+            try:
+                os.chmod(gx_path, stat.S_IRWXU | stat.S_IROTH | stat.S_IRGRP)  # attempt to set execute permissions for the owner
+                gx_result = subprocess.run(args, capture_output=True)
+            except:
+                self.report({'ERROR'}, f"GxModelViewer does not have the correct permissions to run. \nPlease set executable permissions on:\n{gx_path}")
+                return {'CANCELLED'}
         except:
             self.report({'ERROR'}, f"GxModelViewer failed to run. See the console for more details.")
             return {'CANCELLED'}
 
+        
+        gx_stdout_bytes = gx_result.stdout
 
-        errors = [error for error in gx_result.stdout.decode().split('\r\n') if ("Import Warning" in error) or ("Error" in error)]
+        try:
+            gx_stdout_str = gx_stdout_bytes.decode().split('\r\n')
+        except UnicodeDecodeError:
+            try:
+                if sys.platform == 'win32':
+                    codepage = f"cp{windll.kernel32.GetConsoleOutputCP()}"
+                    gx_stdout_str = gx_stdout_bytes.decode(encoding=codepage).split('\r\n')
+                else:
+                    gx_stdout_str = gx_stdout_bytes.decode(encoding=locale.getpreferredencoding(False)).split('\r\n')
+            except:
+                gx_stdout_str = gx_stdout_bytes.decode(errors="replace").split('\r\n')
+
+        errors = [error for error in gx_stdout_str if ("Import Warning" in error) or ("Error" in error)]
         if len(errors) > 0:
             self.report({'ERROR'}, "GxModelViewer warnings/errors occured: " + "\n".join(errors))
         
-        print(gx_result.stdout.decode())
+        print('\n'.join(gx_stdout_str))
         
         return {'FINISHED'}
 
@@ -1230,7 +1279,7 @@ class OBJECT_OT_export_stagedef(bpy.types.Operator):
         raw_stagedef_path = bpy.path.abspath(context.scene.export_raw_stagedef_path)
 
         if platform == "linux" or platform == "linux2":
-            ws_path = bpy.utils.script_path_user() + "/addons/BlendToSMBStage2/ws2lzfrontend/ws2lzfrontend"
+            ws_path = bpy.utils.script_path_user() + "/addons/BlendToSMBStage2/ws2lzfrontend/bin/ws2lzfrontend"
         else:
             ws_path = bpy.utils.script_path_user() + "/addons/BlendToSMBStage2/ws2lzfrontend/ws2lzfrontend.exe"
 
@@ -1249,17 +1298,36 @@ class OBJECT_OT_export_stagedef(bpy.types.Operator):
         try:
             ws_result = subprocess.run(command_args, capture_output=True)
         except PermissionError:
-            self.report({'ERROR'}, f"SMB Workshop 2 does not have the correct permissions to run. \nPlease set executable permissions on:\n{ws_path}")
-            return {'CANCELLED'}
+            try:
+                os.chmod(ws_path, stat.S_IRWXU | stat.S_IROTH | stat.S_IRGRP)  # attempt to set execute permissions for the owner
+                ws_result = subprocess.run(command_args, capture_output=True)
+            except:
+                self.report({'ERROR'}, f"SMB Workshop 2 does not have the correct permissions to run. \nPlease set executable permissions on:\n{ws_path}")
+                return {'CANCELLED'}
         except:
             self.report({'ERROR'}, f"SMB Workshop 2 failed to run. See the console for more details.")
             return {'CANCELLED'}
 
-        errors = [error for error in ws_result.stdout.decode().split('\n') if ("Critical" in error) or ("Error" in error) or ("Warning" in error)]
+        ws_stdout_bytes = ws_result.stdout
+
+        try:
+            ws_stdout_str = ws_stdout_bytes.decode().split('\r\n')
+        except UnicodeDecodeError:
+            try:
+                if sys.platform == 'win32':
+                    codepage = f"cp{windll.kernel32.GetConsoleOutputCP()}"
+                    ws_stdout_str = ws_stdout_bytes.decode(encoding=codepage).split('\r\n')
+                else:
+                    ws_stdout_str = ws_stdout_bytes.decode(encoding=locale.getpreferredencoding(False)).split('\r\n')
+
+            except:
+                ws_stdout_str = ws_stdout_bytes.decode(errors="replace").split('\r\n')
+
+        errors = [error for error in ws_stdout_str if ("Critical" in error) or ("Error" in error) or ("Warning" in error)]
         if len(errors) > 0:
             self.report({'ERROR'}, "Workshop 2 warnings/errors occurred: " + "\n".join(errors))
 
-        print(ws_result.stdout.decode())
+        print('\n'.join(ws_stdout_str))
 
         return {'FINISHED'}
 
@@ -1380,13 +1448,12 @@ class OBJECT_OT_export_background(bpy.types.Operator):
 
         print("Completed, saving...")
 
-        if platform == "linux" or platform == "linux2":
-            config = etree.tostring(root, pretty_print=True, encoding="unicode")
-        else:
-            config = etree.tostring(root, encoding="unicode")
+        config_string = etree.tostring(root, encoding="unicode")
+        config_dom = minidom.parseString(config_string)
+        config_string_pretty = config_dom.toprettyxml()
 
         config_file = open(bpy.path.abspath(context.scene.export_background_path), "w")
-        config_file.write(config)
+        config_file.write(config_string_pretty)
         config_file.close()
 
         print("Finished generating config")
@@ -1394,7 +1461,7 @@ class OBJECT_OT_export_background(bpy.types.Operator):
         return {'FINISHED'}
 
 # Function for appending all imported background objects in an XML to a config root
-def append_imported_bg_objects(self, context, bg_root, dest_root, obj_names):
+def append_imported_bg_objects(self, context, imported_xml_root, destination_root, obj_names):
     # There's lots of wacky axis swapping going on here so make sure to pay attention to that
 
     # Converts an XML attribute list from Blender coordinates to SMB coordinates,
@@ -1407,17 +1474,20 @@ def append_imported_bg_objects(self, context, bg_root, dest_root, obj_names):
     # Converts an XML attribute list from radians to degrees
     convert_to_degrees = lambda v: Vector((math.degrees(v[0]), math.degrees(v[1]), math.degrees(v[2])))
 
-    for index, imported_bg_model in enumerate(list(bg_root)):
-        name = imported_bg_model.find('name')
-        imported_name = "[EXT_IMPORTED:" + name.text + ":" + str(index) + "]"
+    for index, imported_bg_model in enumerate(list(imported_xml_root)):
+        xml_name = imported_bg_model.find('name')
+        blender_name = "[EXT_IMPORTED:" + xml_name.text + ":" + str(index) + "]"
 
-        print(f"Exporting imported background object {imported_name}...")
+        print(f"\tExporting imported background object {blender_name}...")
 
-        # Special handling if the object was imported as a visual preview and potentially modified
-        if imported_name in obj_names:
-            imported_object = context.scene.objects[imported_name]
+        # If we're using background previews, check to see if the object exists, if it doesn't, it was probably deleted
+        if context.scene.background_import_preview:
+            if blender_name in obj_names:
+                imported_blender_object = context.scene.objects[blender_name]
+            else:
+                continue
         else:
-            imported_object = None
+            imported_blender_object = None
 
         # Grabs the original pos/rot/scale from the imported XML file
         # The XML background is expected to provide vectors in SMB's coordinate system, so we do not convert here
@@ -1428,12 +1498,11 @@ def append_imported_bg_objects(self, context, bg_root, dest_root, obj_names):
         # Handles position of imported BG object
         bg_pos = imported_bg_model.find('position').attrib
 
-        # Special handling if the object was imported as a visual preview and potentially modified
-
-        if imported_object is None:
+        # If no empties were imported, we can just rely on the original position
+        if imported_blender_object is None:
             current_bg_pos = orig_pos
         else:
-            current_bg_pos = convert_to_smb_coords(imported_object.location, True)
+            current_bg_pos = convert_to_smb_coords(imported_blender_object.location, True)
 
         bg_pos['x'] = str(current_bg_pos[0])
         bg_pos['y'] = str(current_bg_pos[1])
@@ -1442,10 +1511,11 @@ def append_imported_bg_objects(self, context, bg_root, dest_root, obj_names):
         # Handles rotation of imported BG object
         bg_rot = imported_bg_model.find('rotation').attrib
 
-        if imported_object is None:
+        # If no empties were imported, we can just rely on the original position
+        if imported_blender_object is None:
             current_bg_rot = orig_rot
         else:
-            current_bg_rot = convert_to_smb_coords(convert_to_degrees(imported_object.rotation_euler), True)
+            current_bg_rot = convert_to_smb_coords(convert_to_degrees(imported_blender_object.rotation_euler), True)
 
         bg_rot['x'] = str(current_bg_rot[0])
         bg_rot['y'] = str(current_bg_rot[1])
@@ -1454,36 +1524,37 @@ def append_imported_bg_objects(self, context, bg_root, dest_root, obj_names):
         # Handles scale of imported BG object
         bg_scale = imported_bg_model.find('scale').attrib
 
-        # Special handling if the object was imported as a visual preview and potentially modified
+        # If no empties were imported, we can just rely on the original position
         # Also special handling for the case of cube empty approximations, which are scaled to their in-game
         # dimensions. Since this effect is achieved through scaling, this is accounted for here, and the scaling
         # is un-done.
-        if imported_object is None:
+        if imported_blender_object is None:
             current_bg_scale = orig_scale
         else:
             bg_dimensions = Vector((1, 1, 1))
-            if name.text in dimension_dict.dimensions.keys():
-                bg_dimensions = dimension_dict.dimensions[name.text]
 
-            adjusted_scale = Vector((imported_object.scale[0]/bg_dimensions[0],
-                                     imported_object.scale[1]/bg_dimensions[2],
-                                     imported_object.scale[2]/bg_dimensions[1]))
+            if xml_name.text in dimension_dict.dimensions.keys():
+                bg_dimensions = dimension_dict.dimensions[xml_name.text]
+
+            adjusted_scale = Vector((imported_blender_object.scale[0]/bg_dimensions[0],
+                                     imported_blender_object.scale[1]/bg_dimensions[2],
+                                     imported_blender_object.scale[2]/bg_dimensions[1]))
             current_bg_scale = convert_to_smb_coords(adjusted_scale, False)
 
         bg_scale['x'] = str(current_bg_scale[0])
         bg_scale['y'] = str(current_bg_scale[1])
         bg_scale['z'] = str(current_bg_scale[2])
 
-        # For imported effects
+        # Handles imported effects
         effects = imported_bg_model.find('effectKeyframes')
         if effects is not None:
             for effect in effects:
                 if effect.tag == 'effectType1':
                     for j, ef1 in enumerate(list(effect)):
-                        imported_name = "[EXT_IMPORTED_FX:" + name.text + ":" + str(index) + ":" + str(j) + "]"
+                        blender_name = "[EXT_IMPORTED_FX:" + xml_name.text + ":" + str(index) + ":" + str(j) + "]"
 
-                        if imported_name in obj_names:
-                            effect_obj = context.scene.objects[imported_name]
+                        if blender_name in obj_names:
+                            effect_obj = context.scene.objects[blender_name]
                         else:
                             effect_obj = None
 
@@ -1499,10 +1570,10 @@ def append_imported_bg_objects(self, context, bg_root, dest_root, obj_names):
 
                 elif effect.tag == 'effectType2':
                     for j, ef2 in enumerate(list(effect)):
-                        imported_name = "[EXT_IMPORTED_FX:" + name.text + ":" + str(index) + ":" + str(j) + "]"
+                        blender_name = "[EXT_IMPORTED_FX:" + xml_name.text + ":" + str(index) + ":" + str(j) + "]"
 
-                        if imported_name in obj_names:
-                            effect_obj = context.scene.objects[imported_name]
+                        if blender_name in obj_names:
+                            effect_obj = context.scene.objects[blender_name]
                         else:
                             effect_obj = None
 
@@ -1515,8 +1586,9 @@ def append_imported_bg_objects(self, context, bg_root, dest_root, obj_names):
 
         anim = imported_bg_model.find('animKeyframes')
 
-        # For updating all animation keyframes for imported object previews
-        if anim is not None and imported_object is not None:
+        # Handles updating all animation keyframes for imported object previews
+        # TODO: Not perfect! Need to handle object translations properly...
+        if anim is not None and imported_blender_object is not None:
             # For imported objects, determine how much the object has moved from its original position, so this change
             # can be applied to animation keyframes.
             pos_delta = current_bg_pos - orig_pos
@@ -1539,7 +1611,7 @@ def append_imported_bg_objects(self, context, bg_root, dest_root, obj_names):
                                 keyframe.attrib['value'] = str(float(keyframe.attrib['value']) * delta)
                         break
 
-        dest_root.append(imported_bg_model)
+        destination_root.append(imported_bg_model)
 
 
 # Operator for exporting the stage config as a .XML file
@@ -1755,12 +1827,13 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
             append_imported_bg_objects(self, context, bg_root, root, obj_names)
 
         print("Completed, saving...")
-        if platform == "linux" or platform == "linux2":
-            config = etree.tostring(root, pretty_print=True, encoding="unicode")
-        else:
-            config = etree.tostring(root, encoding="unicode")
+
+        config_string = etree.tostring(root, encoding="unicode")
+        config_dom = minidom.parseString(config_string)
+        config_string_pretty = config_dom.toprettyxml()
+
         config_file = open(bpy.path.abspath(context.scene.export_config_path), "w")
-        config_file.write(config)
+        config_file.write(config_string_pretty)
         config_file.close()
         print("Finished generating config")
 

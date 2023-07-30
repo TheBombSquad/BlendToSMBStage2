@@ -4,10 +4,7 @@ from sys import platform
 from .descriptor_base import DescriptorBase
 from .. import stage_object_drawing, generate_config
 
-if platform == "linux" or platform == "linux2":
-    from lxml import etree
-else:
-    import xml.etree.ElementTree as etree
+import xml.etree.ElementTree as etree
     
 # Level model
 class DescriptorModel(DescriptorBase):
@@ -50,7 +47,8 @@ class DescriptorModel(DescriptorBase):
             mm = etree.SubElement(model, "runtimeReflective")
             mm.text = "true"
 
-        if "[MODEL]" in obj.name and "cast_shadow" in obj.keys():
+        if "[MODEL]" in obj.name and \
+                any(key in ["cast_shadow", "receive_shadow", "unk3", "transparencyA", "transparencyB"] for key in obj.keys()):
             bitflag = 0
             bitflag = bitflag + (obj["cast_shadow"] << 0)
             bitflag = bitflag + (obj["receive_shadow"] << 1)

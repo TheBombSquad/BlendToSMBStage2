@@ -7,10 +7,7 @@ from sys import platform
 from .descriptor_base import DescriptorBase
 from .. import stage_object_drawing, generate_config, statics
 
-if platform == "linux" or platform == "linux2":
-    from lxml import etree
-else:
-    import xml.etree.ElementTree as etree
+import xml.etree.ElementTree as etree
 
 # Item group
 class DescriptorIG(DescriptorBase):

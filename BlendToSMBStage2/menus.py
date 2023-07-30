@@ -3,9 +3,43 @@ import bmesh
 import math
 import mathutils
 
+# Originally implemented by CraftedCart
+class VIEW3D_OT_cube_project_fixed(bpy.types.Operator):
+    bl_idname = "uv.cube_project_fixed"
+    bl_label = "Cube Projection (1.0 scale, fixed origin) [b2smb]"
+
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        old_cursor_loc = bpy.context.scene.cursor.location.copy()
+        old_cursor_rot_euler = bpy.context.scene.cursor.rotation_euler.copy()
+        old_cursor_rot_quat = bpy.context.scene.cursor.rotation_quaternion.copy()
+        old_cursor_rot_mode = bpy.context.scene.cursor.rotation_mode
+        old_pivot_point = bpy.context.scene.tool_settings.transform_pivot_point
+
+        bpy.context.scene.cursor.location = (0.0, 0.0, 0.0)
+        bpy.context.scene.cursor.rotation_mode = "XYZ"
+        bpy.context.scene.cursor.rotation_euler = (0.0, 0.0, 0.0)
+        bpy.context.scene.tool_settings.transform_pivot_point = "CURSOR"
+
+        bpy.ops.uv.cube_project(
+            cube_size=1.0,
+            correct_aspect=True,
+            clip_to_bounds=False,
+            scale_to_bounds=False
+        )
+
+        bpy.context.scene.cursor.location = old_cursor_loc
+        bpy.context.scene.cursor.rotation_mode = old_cursor_rot_mode
+        bpy.context.scene.cursor.rotation_euler = old_cursor_rot_euler
+        bpy.context.scene.cursor.rotation_quaternion = old_cursor_rot_quat
+        bpy.context.scene.tool_settings.transform_pivot_point = old_pivot_point
+
+        return {"FINISHED"}
+
 class VIEW3D_OT_cube_project_smb_checker(bpy.types.Operator):
     bl_idname = "uv.cube_project_smb_checker"
-    bl_label = "Cube Projection (Checkers) [b2smb]"
+    bl_label = "Texture-Based Cube Projection (Checkers) [b2smb]"
     
     bl_options = {'REGISTER', 'UNDO'}
     checker_size: bpy.props.IntProperty(name = "2x2 Checker Size", default=128, min=1)
@@ -254,6 +288,7 @@ class VIEW3D_OT_smart_FAQ(bpy.types.Operator):
         return {"FINISHED"}
 
 def menu_func(self, context):
+    self.layout.operator(VIEW3D_OT_cube_project_fixed.bl_idname)
     self.layout.operator(VIEW3D_OT_cube_project_smb_checker.bl_idname)
     self.layout.operator(VIEW3D_OT_checker_FAQ.bl_idname)
     self.layout.operator(VIEW3D_OT_smart_FAQ.bl_idname)

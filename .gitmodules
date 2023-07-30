@@ -1,0 +1,6 @@
+[submodule "smblevelworkshop2"]
+	path = smblevelworkshop2
+	url = https://github.com/CraftedCart/smblevelworkshop2.git
+[submodule "GxUtils"]
+	path = GxUtils
+	url = https://github.com/TheBombSquad/GxUtils.git

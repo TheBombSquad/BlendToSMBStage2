@@ -4,10 +4,7 @@ from sys import platform
 
 from mathutils import Vector
 
-if platform == "linux" or platform == "linux2":
-    from lxml import etree
-else:
-    import xml.etree.ElementTree as etree
+import xml.etree.ElementTree as etree
 
 class AnimData:
     class Channel:
