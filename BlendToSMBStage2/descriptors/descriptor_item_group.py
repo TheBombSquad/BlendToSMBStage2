@@ -16,22 +16,22 @@ class DescriptorIG(DescriptorBase):
         return "[IG]"
 
     @staticmethod
-    def generate_xml(parent_element, obj):
+    def generate_xml_with_anim(parent_element, obj, anim_data):
         if "collisionStartX" not in obj.keys():
             raise Exception("Object " + obj.name + " is not a real item group! Try converting it into an item group, or renaming it.")
 
         print("\tProcessing item group " + obj.name)
-        xig = etree.SubElement(parent_element, "itemGroup")
+        ig_xml = etree.SubElement(parent_element, "itemGroup")
 
         # Name
-        igName = etree.SubElement(xig, "name")
+        igName = etree.SubElement(ig_xml, "name")
         igName.text = obj.name
 
         # Position/Rotation
-        etree.SubElement(xig, "rotationCenter", x=str(obj.location.x),
+        etree.SubElement(ig_xml, "rotationCenter", x=str(obj.location.x),
                                                 y=str(obj.location.z),
                                                 z=str(-obj.location.y))
-        etree.SubElement(xig, "initialRotation", x=str(math.degrees(obj.rotation_euler.x)),
+        etree.SubElement(ig_xml, "initialRotation", x=str(math.degrees(obj.rotation_euler.x)),
                                                  y=str(math.degrees(obj.rotation_euler.z)),
                                                  z=str(math.degrees(-obj.rotation_euler.y)))
 
@@ -40,11 +40,11 @@ class DescriptorIG(DescriptorBase):
         if "animLoopTime" in obj.keys() and obj["animLoopTime"] != -1:
             loopTime = obj["animLoopTime"]
 
-        animLoopTime = etree.SubElement(xig, "animLoopTime")
+        animLoopTime = etree.SubElement(ig_xml, "animLoopTime")
         animLoopTime.text = str(loopTime) 
 
         # Animation ID
-        animIdE = etree.SubElement(xig, "animGroupId")
+        animIdE = etree.SubElement(ig_xml, "animGroupId")
         animIdE.text = str(obj["animId"])
 
         # Initial playing state
@@ -55,7 +55,7 @@ class DescriptorIG(DescriptorBase):
         elif animInitState == 3: animInitStateStr = "FAST_FORWARD"
         elif animInitState == 4: animInitStateStr = "REWIND"
         
-        animInitStateE = etree.SubElement(xig, "animInitialState")
+        animInitStateE = etree.SubElement(ig_xml, "animInitialState")
         animInitStateE.text = animInitStateStr
 
         # Type of animation
@@ -65,33 +65,36 @@ class DescriptorIG(DescriptorBase):
         elif animType == 2: animTypeStr = "SEESAW"
         else: raise ValueError("Object " + obj.name + " has invalid anim type " + str(animType))
 
-        animTypeE = etree.SubElement(xig, "animSeesawType")
+        animTypeE = etree.SubElement(ig_xml, "animSeesawType")
         animTypeE.text = animTypeStr
 
         # Conveyor speed
-        conv = etree.SubElement(xig, "conveyorSpeed", x=str(obj.get("conveyorX", 0.0)),
+        conv = etree.SubElement(ig_xml, "conveyorSpeed", x=str(obj.get("conveyorX", 0.0)),
                                                       y=str(obj.get("conveyorY", 0.0)),
                                                       z=str(obj.get("conveyorZ", 0.0)))
 
         # Seesaw properties
-        seesawSens = etree.SubElement(xig, "seesawSensitivity")
+        seesawSens = etree.SubElement(ig_xml, "seesawSensitivity")
         seesawSens.text = str(obj.get("seesawSensitivity", 0.0))
-        seesawFriction = etree.SubElement(xig, "seesawFriction")
+        seesawFriction = etree.SubElement(ig_xml, "seesawFriction")
         seesawFriction.text = str(obj.get("seesawFriction", 0.0)) 
-        seesawSpring = etree.SubElement(xig, "seesawSpring")
+        seesawSpring = etree.SubElement(ig_xml, "seesawSpring")
         seesawSpring.text = str(obj.get("seesawSpring", 0.0))
 
         # Texture scroll
-        texScroll = etree.SubElement(xig, "textureScroll", x=str(obj.get("texScrollUSpeed", 0.0)),
+        texScroll = etree.SubElement(ig_xml, "textureScroll", x=str(obj.get("texScrollUSpeed", 0.0)),
                                                            y=str(obj.get("texScrollVSpeed", 0.0)))
 
         # Collision grid start/step/count
-        grid = etree.SubElement(xig, "collisionGrid")
+        grid = etree.SubElement(ig_xml, "collisionGrid")
         etree.SubElement(grid, "start", x=str(obj["collisionStartX"]), z=str(obj["collisionStartY"]))
         etree.SubElement(grid, "step", x=str(obj["collisionStepX"]), z=str(obj["collisionStepY"]))
         etree.SubElement(grid, "count", x=str(obj["collisionStepCountX"]), z=str(obj["collisionStepCountY"]))
 
-        return xig
+        # Add animation
+        generate_config.generate_anim_xml(ig_xml, anim_data)
+
+        return ig_xml
 
     @staticmethod
     def render(obj):

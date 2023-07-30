@@ -1,3 +1,4 @@
+import itertools
 import stat
 import bpy
 import bgl
@@ -12,7 +13,8 @@ import re
 import locale
 
 from . import statics, stage_object_drawing, generate_config, dimension_dict
-from .descriptors import descriptors, descriptor_item_group, descriptor_model_stage, descriptor_track_path
+
+from .descriptors import descriptors, descriptor_item_group, descriptor_model_stage, descriptor_track_path, descriptor_model_bg, descriptor_model_fg
 from bpy.props import BoolProperty, PointerProperty, EnumProperty, FloatProperty, FloatVectorProperty, IntProperty
 from sys import platform
 from mathutils import Vector, Matrix
@@ -1610,6 +1612,7 @@ def append_imported_bg_objects(self, context, imported_xml_root, destination_roo
 
         destination_root.append(imported_bg_model)
 
+
 # Operator for exporting the stage config as a .XML file
 class OBJECT_OT_generate_config(bpy.types.Operator):
     bl_idname = "object.generate_config"
@@ -1681,8 +1684,11 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
 
         igs = []
         
-        # Start frame of animation
+        # Export w.r.t first frame of animation, except when exporting per-frame animation
         begin_frame = context.scene.frame_start
+        end_frame = bpy.context.scene.frame_end
+        orig_frame = bpy.context.scene.frame_current
+        context.scene.frame_set(begin_frame)
 
         # Marks objects that don't have keyframes on frame 0, so they can be removed later
         first_frame_added_objs = []
@@ -1695,100 +1701,116 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
             for i in [0, 1, 2]:
                 all_curve_types.append((i, ct))
 
-        # Iterate over all top-level objects
-        for obj in [obj for obj in bpy.context.scene.objects if (obj.type == 'EMPTY' or obj.type == 'MESH' or obj.type == 'CURVE')]:
+        class ObjExport:
+            def __init__(self, obj):
+                self.obj = obj
+                self.anim_data = generate_config.AnimData()
+    
+        # Build ObjExport lists
+        ig_export_datas: list[ObjExport] = []
+        fg_export_datas: list[ObjExport] = []
+        bg_export_datas: list[ObjExport] = []
+        other_export_datas: list[ObjExport] = []
 
-            # Add first keyframe to IGs, BGs, and FGs
-            # Also add IGs to the IG list
-            if any(animatable in obj.name for animatable in ["[IG]", "[BG]", "[FG]"]): 
-                context.scene.frame_set(begin_frame)
+        ig_tag = descriptor_item_group.DescriptorIG.get_object_name()
+        fg_tag = descriptor_model_fg.DescriptorFG.get_object_name()
+        bg_tag = descriptor_model_bg.DescriptorBG.get_object_name()
 
-                if "[IG]" in obj.name: igs.append(obj)
-
-                # Semi-hacky way to get the object's center of rotation to work properly
-                # B2SMB1 inadvertently fixed this by baking *all* keyframes
-                # This is fixed by adding an initial keyframe on every curve
-                # This also fixes weirdness with background and foreground objects
-                if obj.animation_data is not None and obj.animation_data.action is not None:
-                    first_keyframe_exists = False
-                    existing_channels = []
-                    fcurves = obj.animation_data.action.fcurves
-
-                    # Find existing channels with frame 0 keyframes
-                    for (index, curve_type) in all_curve_types:
-                        fcurve = fcurves.find(curve_type, index=index)
-                        if fcurve is not None:
-                            for keyframe_index in range(len(fcurve.keyframe_points)):
-                                if fcurve.keyframe_points[keyframe_index].co[0] == float(begin_frame):
-                                    existing_channels.append((index, curve_type))
-                                    # print(f"Added existing channel {curve_type}[{index}]")
-                                    break
-
-                    # If not all of the channels have frame 0 keyframes, we need to add frame 0 keyframes on those channels
-                    if len(existing_channels) != 9:
-                        first_frame_added_objs.append((obj, existing_channels))
-                   
-                    # We just add frame 0 keyframes on all needed channels, and use existing_chanenls to find out what needs to be removed after export
-                    for curve_type in curve_types:
-                        obj.keyframe_insert(curve_type, frame=begin_frame, options = {'INSERTKEY_NEEDED'})
-
-                    print("\tInserted frame zero keyframe for item group " + obj.name)
-                
-                # Generate XML elements for BG and FG objects
-                if "[IG]" not in obj.name:
-                    for desc in descriptors.descriptors_root:
-                        match_descriptor = False
-                        if obj.name.startswith(desc.get_object_name()): 
-                            match_descriptor = True
-                            desc.generate_xml(root, obj)
-                            continue
-
-            # Handle non-animated BG/FG objects
-            else:
-                # Non-item groups (start, BG/FG objects, etc)
-                for desc in descriptors.descriptors_root:
-                    match_descriptor = False
-                    if obj.name.startswith(desc.get_object_name()): 
-                        match_descriptor = True
-                        desc.generate_xml(root, obj)
-                        continue
-
-        # Iterate over all item groups
-        for ig in igs: 
-            context.scene.frame_set(begin_frame)
-            # Children list
-            ig_children = [obj for obj in bpy.context.scene.objects if obj.parent == ig]
-            ig_children.append(ig)
-
-            # Generate item group XML elements
-            if 'collisionStartX' in ig.keys():
-                xig = descriptor_item_group.DescriptorIG.generate_xml(root, ig)
-
-            else:
+        for obj in bpy.context.scene.objects:
+            if obj.type not in ["EMPTY", "MESH", "CURVE"]:
                 continue
+            if ig_tag in obj.name:
+                # Don't export at all otherwise
+                if 'collisionStartX' in obj:
+                    ig_export_datas.append(ObjExport(obj))
+            elif fg_tag in obj.name:
+                # Don't export at all otherwise
+                if obj.name.startswith(descriptor_model_fg.DescriptorFG.get_object_name()):
+                    fg_export_datas.append(ObjExport(obj))
+            elif bg_tag in obj.name:
+                # Don't export at all otherwise
+                if obj.name.startswith(descriptor_model_bg.DescriptorBG.get_object_name()):
+                    bg_export_datas.append(ObjExport(obj))
+            else:
+                other_export_datas.append(ObjExport(obj))
 
-            # Animation
-            if ig.animation_data is not None and ig.animation_data.action is not None:
-                generate_config.addAnimation(ig, xig)
+        # Semi-hacky way to get the object's center of rotation to work properly
+        # B2SMB1 inadvertently fixed this by baking *all* keyframes
+        # This is fixed by adding an initial keyframe on every curve
+        # This also fixes weirdness with background and foreground objects
+        for exp in itertools.chain(ig_export_datas, fg_export_datas, bg_export_datas):
+            if exp.obj.animation_data is not None and exp.obj.animation_data.action is not None:
+                existing_channels = []
+                fcurves = exp.obj.animation_data.action.fcurves
+
+                # Find existing channels with frame 0 keyframes
+                for (index, curve_type) in all_curve_types:
+                    fcurve = fcurves.find(curve_type, index=index)
+                    if fcurve is not None:
+                        for keyframe_index in range(len(fcurve.keyframe_points)):
+                            if fcurve.keyframe_points[keyframe_index].co[0] == float(begin_frame):
+                                existing_channels.append((index, curve_type))
+                                # print(f"Added existing channel {curve_type}[{index}]")
+                                break
+
+                # If not all of the channels have frame 0 keyframes, we need to add frame 0 keyframes on those channels
+                if len(existing_channels) != 9:
+                    first_frame_added_objs.append((exp.obj, existing_channels))
+                
+                # We just add frame 0 keyframes on all needed channels, and use existing_chanenls to find out what needs to be removed after export
+                for curve_type in curve_types:
+                    exp.obj.keyframe_insert(curve_type, frame=begin_frame, options = {'INSERTKEY_NEEDED'})
+
+                print("\tInserted frame zero keyframe for item group " + exp.obj.name)
+
+        # Generate initial animation data based on fcurve keyframes
+        for exp in itertools.chain(ig_export_datas, fg_export_datas, bg_export_datas):
+            generate_config.generate_keyframe_anim_data(exp.obj, exp.anim_data)
+
+        # Generate per-global-frame animation data
+        for frame in range(begin_frame, end_frame + 1):
+            bpy.context.scene.frame_set(frame)
+            for exp in itertools.chain(ig_export_datas, fg_export_datas, bg_export_datas):
+                generate_config.generate_per_frame_anim_data(exp.obj, exp.anim_data)
+        context.scene.frame_set(begin_frame)
+
+        # Generate FG/BG XML
+        for fg_exp in fg_export_datas:
+            descriptor_model_fg.DescriptorFG.generate_xml_with_anim(root, fg_exp.obj, fg_exp.anim_data)
+        for bg_exp in bg_export_datas:
+            descriptor_model_bg.DescriptorBG.generate_xml_with_anim(root, bg_exp.obj, bg_exp.anim_data)
+
+        # Generate other object XML
+        for other_exp in other_export_datas:
+            for desc in descriptors.descriptors_root:
+                if other_exp.obj.name.startswith(desc.get_object_name()): 
+                    desc.generate_xml(root, other_exp.obj)
+
+        # Generate itemgroup XML
+        for ig_exp in ig_export_datas:
+            ig_xml = descriptor_item_group.DescriptorIG.generate_xml_with_anim(root, ig_exp.obj, ig_exp.anim_data)
+
+            # Children list
+            ig_children = [obj for obj in bpy.context.scene.objects if obj.parent == ig_exp.obj]
+            ig_children.append(ig_exp.obj)
 
             # Children of item groups
             for child in ig_children:
-                context.scene.frame_set(begin_frame)
                 match_descriptor = False
 
                 # Generate elements for listed descriptors (except IGs)
                 for desc in descriptors.descriptors:
                     if desc.get_object_name() in child.name and "[IG]" not in child.name:
                         match_descriptor = True
-                        desc.generate_xml(xig, child)
+                        desc.generate_xml(ig_xml, child)
                         break
                 
                 # Object is not a listed descriptor
                 if not match_descriptor and child.data is not None:
-                        descriptor_model_stage.DescriptorModel.generate_xml(xig, child)
+                    descriptor_model_stage.DescriptorModel.generate_xml(ig_xml, child)
 
-
-        context.scene.frame_set(begin_frame)
+        # Restore frame user was on before exporting
+        bpy.context.scene.frame_set(orig_frame)
 
         # Import background and foreground objects from a .XML file, if it exists
         bg_path = bpy.path.abspath(context.scene.background_import_path)

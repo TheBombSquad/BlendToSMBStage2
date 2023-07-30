@@ -14,46 +14,45 @@ class DescriptorBG(DescriptorBase):
         return "[BG]"
 
     @staticmethod
-    def generate_xml(parent_element, obj):
+    def generate_xml_with_anim(parent_element, obj, anim_data):
         print("\tBackground model: " + obj.name)
         
         # Export with pos/rot/scale if BG object has animation, otherwise don't
         if obj.animation_data is not None and obj.animation_data.action is not None:
-            bg = generate_config.generate_generic_obj_element(obj, "backgroundModel", parent_element, position=True, rotation=True, scale=True, name=False)
+            bg_xml = generate_config.generate_generic_obj_element(obj, "backgroundModel", parent_element, position=True, rotation=True, scale=True, name=False)
         else:
-            bg = generate_config.generate_generic_obj_element(obj, "backgroundModel", parent_element, position=True, rotation=True, scale=True, name=False, static_bg=True)
+            bg_xml = generate_config.generate_generic_obj_element(obj, "backgroundModel", parent_element, position=True, rotation=True, scale=True, name=False, static_bg=True)
 
         # Cleans up names
         if obj.data == None or obj.name == obj.data.name:
             if "[EXT:" in obj.name:
-                model = etree.SubElement(bg, "name")
+                model = etree.SubElement(bg_xml, "name")
                 model.text = re.search(r".*\[EXT:(.*)\].*", obj.name).group(1)
             else:
-                model = etree.SubElement(bg, "name")
+                model = etree.SubElement(bg_xml, "name")
                 model.text = obj.name.replace(" ", "_")
         else:
-            model = etree.SubElement(bg, "name")
+            model = etree.SubElement(bg_xml, "name")
             model.text = (obj.name + "_" + obj.data.name).replace(" ", "_")
 
         # Model mesh type
         if "meshType" in obj.keys():
-            meshTypeE = etree.SubElement(bg, "meshType")
+            meshTypeE = etree.SubElement(bg_xml, "meshType")
             meshTypeE.text = str(obj['meshType'])
 
         # Animation loop time
         if "animLoopTime" in obj.keys():
             loopTime = (bpy.context.scene.frame_end - bpy.context.scene.frame_start+1)/bpy.context.scene.render.fps
             if obj["animLoopTime"] != -1: loopTime = obj["animLoopTime"]
-            animLoopTimeE = etree.SubElement(bg, "animLoopTime")
+            animLoopTimeE = etree.SubElement(bg_xml, "animLoopTime")
             animLoopTimeE.text = str(loopTime)
                     
         # Texture scroll
         if "texScrollUSpeed" in obj.keys():
-            texScroll = etree.SubElement(bg, "textureScroll", x=str(obj["texScrollUSpeed"]),
+            texScroll = etree.SubElement(bg_xml, "textureScroll", x=str(obj["texScrollUSpeed"]),
                                                                y=str(obj["texScrollVSpeed"]))
         # Add animation
-        if obj.animation_data is not None and obj.animation_data.action is not None:
-            generate_config.addAnimation(obj, bg)
+        generate_config.generate_anim_xml(bg_xml, anim_data)
 
     @staticmethod
     def construct(obj):
