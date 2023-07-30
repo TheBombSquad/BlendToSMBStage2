@@ -10,6 +10,11 @@ class DescriptorBase:
     def generate_xml(parent_element, obj):
         pass
 
+    # Generates the XML element for the object using the associated animation data
+    @staticmethod
+    def generate_xml_with_anim(parent_element, obj, anim_data):
+        pass
+
     # Renders the object in the 3D viewport through OpenGL
     @staticmethod
     def render(obj):

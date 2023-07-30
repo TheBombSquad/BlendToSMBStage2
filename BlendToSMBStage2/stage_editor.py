@@ -1422,15 +1422,89 @@ class OBJECT_OT_export_background(bpy.types.Operator):
         
         root = etree.Element("superMonkeyBallBackground", version="1.3.0")
 
+        begin_frame = bpy.context.scene.frame_start
+        end_frame = bpy.context.scene.frame_end
+
+        # Curve types for f-curve iteration
+        curve_types = ["location", "rotation_euler", "scale"]
+
+        all_curve_types = []
+        for ct in curve_types:
+            for i in [0, 1, 2]:
+                all_curve_types.append((i, ct))
+
+        # Marks objects that don't have keyframes on frame 0, so they can be removed later
+        first_frame_added_objs = []
+
+        class ObjExport:
+            def __init__(self, obj):
+                self.obj = obj
+                self.anim_data = generate_config.AnimData()
+
+        fg_export_datas: list[ObjExport] = []
+        bg_export_datas: list[ObjExport] = []
+
+        fg_tag = descriptor_model_fg.DescriptorFG.get_object_name()
+        bg_tag = descriptor_model_bg.DescriptorBG.get_object_name()
+
         # Iterate over all top-level objects
-        for obj in [obj for obj in bpy.context.scene.objects if (obj.type == 'EMPTY' or obj.type == 'MESH' or obj.type == 'CURVE')]:
-            # Non-item groups (start, BG/FG objects, etc)
-            for desc in [descriptors.DescriptorBG, descriptors.DescriptorFG]: 
-                match_descriptor = False
-                if obj.name.startswith(desc.get_object_name()): 
-                    match_descriptor = True
-                    desc.generate_xml(root, obj)
-                    continue
+        for obj in bpy.context.scene.objects:
+            if obj.type not in ["EMPTY", "MESH", "CURVE"]:
+                continue
+            elif fg_tag in obj.name:
+                # Don't export at all otherwise
+                if obj.name.startswith(descriptor_model_fg.DescriptorFG.get_object_name()):
+                    fg_export_datas.append(ObjExport(obj))
+            elif bg_tag in obj.name:
+                # Don't export at all otherwise
+                if obj.name.startswith(descriptor_model_bg.DescriptorBG.get_object_name()):
+                    bg_export_datas.append(ObjExport(obj))
+
+        # Semi-hacky way to get the object's center of rotation to work properly
+        # B2SMB1 inadvertently fixed this by baking *all* keyframes
+        # This is fixed by adding an initial keyframe on every curve
+        # This also fixes weirdness with background and foreground objects
+        for exp in itertools.chain(fg_export_datas, bg_export_datas):
+            if exp.obj.animation_data is not None and exp.obj.animation_data.action is not None:
+                existing_channels = []
+                fcurves = exp.obj.animation_data.action.fcurves
+
+                # Find existing channels with frame 0 keyframes
+                for (index, curve_type) in all_curve_types:
+                    fcurve = fcurves.find(curve_type, index=index)
+                    if fcurve is not None:
+                        for keyframe_index in range(len(fcurve.keyframe_points)):
+                            if fcurve.keyframe_points[keyframe_index].co[0] == float(begin_frame):
+                                existing_channels.append((index, curve_type))
+                                # print(f"Added existing channel {curve_type}[{index}]")
+                                break
+
+                # If not all of the channels have frame 0 keyframes, we need to add frame 0 keyframes on those channels
+                if len(existing_channels) != 9:
+                    first_frame_added_objs.append((exp.obj, existing_channels))
+
+                # We just add frame 0 keyframes on all needed channels, and use existing_chanenls to find out what needs to be removed after export
+                for curve_type in curve_types:
+                    exp.obj.keyframe_insert(curve_type, frame=begin_frame, options = {'INSERTKEY_NEEDED'})
+
+                print("\tInserted frame zero keyframe for item group " + exp.obj.name)
+
+        # Generate initial animation data based on fcurve keyframes
+        for exp in itertools.chain(fg_export_datas, bg_export_datas):
+            generate_config.generate_keyframe_anim_data(exp.obj, exp.anim_data)
+
+        # Generate per-global-frame animation data
+        for frame in range(begin_frame, end_frame + 1):
+            bpy.context.scene.frame_set(frame)
+            for exp in itertools.chain(fg_export_datas, bg_export_datas):
+                generate_config.generate_per_frame_anim_data(exp.obj, exp.anim_data)
+        context.scene.frame_set(begin_frame)
+
+        # Generate FG/BG XML
+        for fg_exp in fg_export_datas:
+            descriptor_model_fg.DescriptorFG.generate_xml_with_anim(root, fg_exp.obj, fg_exp.anim_data)
+        for bg_exp in bg_export_datas:
+            descriptor_model_bg.DescriptorBG.generate_xml_with_anim(root, bg_exp.obj, bg_exp.anim_data)
 
         # Import background and foreground objects from a .XML file, if it exists
         obj_names = [obj.name for obj in context.scene.objects]
@@ -1456,6 +1530,13 @@ class OBJECT_OT_export_background(bpy.types.Operator):
         config_file.close()
 
         print("Finished generating config")
+
+        # Remove the beginning keyframe channel if it didn't exist prior to it being added
+        for (obj, obj_existing_channels) in first_frame_added_objs:
+            for (idx, curve_type) in all_curve_types:
+                if (idx, curve_type) in obj_existing_channels: continue
+                print(f"Deleted frame zero channel {curve_type}[{idx}] for item group {obj.name}")
+                obj.keyframe_delete(curve_type, index=idx, frame=begin_frame)
 
         return {'FINISHED'}
 
@@ -1685,7 +1766,7 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
         igs = []
         
         # Export w.r.t first frame of animation, except when exporting per-frame animation
-        begin_frame = context.scene.frame_start
+        begin_frame = bpy.context.scene.frame_start
         end_frame = bpy.context.scene.frame_end
         orig_frame = bpy.context.scene.frame_current
         context.scene.frame_set(begin_frame)
