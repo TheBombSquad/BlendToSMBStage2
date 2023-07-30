@@ -87,6 +87,7 @@ cp -rv $(find .. -maxdepth 1 -type f \( ! -name linux-build.sh ! -name ".*" \)) 
 mkdir BlendToSMBStage2-Out || true
 mv $(ls --ignore=BlendToSMBStage2-Out .) BlendToSMBStage2-Out
 mv BlendToSMBStage2-Out BlendToSMBStage2
+rm BlendToSMBStage2-Linux.zip || true
 7z a BlendToSMBStage2-Linux.zip ./BlendToSMBStage2
 
 # Clean up
