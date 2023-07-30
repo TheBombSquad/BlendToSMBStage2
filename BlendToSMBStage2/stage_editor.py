@@ -15,8 +15,7 @@ import locale
 from . import statics, stage_object_drawing, generate_config, dimension_dict
 
 from .descriptors import descriptors, descriptor_item_group, descriptor_model_stage, descriptor_track_path, descriptor_model_bg, descriptor_model_fg
-from bpy.props import BoolProperty, PointerProperty, EnumProperty, FloatProperty, FloatVectorProperty, ntProperty
-from enum import Enum
+from bpy.props import BoolProperty, PointerProperty, EnumProperty, FloatProperty, FloatVectorProperty, IntProperty
 from sys import platform
 from mathutils import Vector, Matrix
 
