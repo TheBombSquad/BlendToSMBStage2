@@ -13,7 +13,7 @@ bl_info = {
     "name": "BlendToSMBStage2",
     "description": "Addon for creating Super Monkey Ball stage configuration files",
     "author": "CraftedCart, The BombSquad",
-    "version": (2, 1),
+    "version": (2, 2),
     "blender": (3, 3, 0), 
     "location": "\"Blend2SMB\" vertical tab in 3D viewport",
     "category": "3D View",
