@@ -6,7 +6,7 @@
 <div align="center">
 <img src=https://github.com/TheBombsquad/BlendToSMBStage2/actions/workflows/build-for-windows.yml/badge.svg>
 </div>
-<div align="center"><a href=https://github.com/TheBombSquad/GxUtils/releases/latest><b><i>Download Latest Release - Windows</i></b></a></div>
+<div align="center"><a href=https://github.com/TheBombSquad/BlendToSMBStage2/releases/latest><b><i>Download Latest Release - Windows</i></b></a></div>
 
 ## Introduction
 <img src=https://github-production-user-asset-6210df.s3.amazonaws.com/35253266/257081449-a280e1f6-c9ac-4ce6-9e55-9fbefea416e2.png width="400" align="right">
