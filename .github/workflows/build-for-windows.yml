@@ -130,7 +130,7 @@ jobs:
     - name: Get version number
       id: get_version_number
       env:
-        major: "2.1"
+        major: "2.2"
         seperator: "-"
         commit: ${{ steps.get_commit_number.outputs.commit_number }}
       run: echo "version_number=$major$seperator$commit" >> $GITHUB_OUTPUT
