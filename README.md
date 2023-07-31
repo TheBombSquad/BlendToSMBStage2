@@ -1,28 +1,42 @@
-# Blend2SMBStage2 
+<div align=center>
+<h1><img style="vertical-align: middle" src=https://github-production-user-asset-6210df.s3.amazonaws.com/35253266/257079755-c626a9f6-ebad-49d4-9857-4e78198f988f.png width="64"></img> BlendToSMBStage2</h1>
+</div>
+<div align="center"><strong><i>An all-in-one Blender plugin for Super Monkey Ball level creation</i></strong></div>
+<br/>
+<div align="center">
+<img src=https://github.com/TheBombsquad/BlendToSMBStage2/actions/workflows/build-for-windows.yml/badge.svg>
+</div>
+<div align="center"><a href=https://github.com/TheBombSquad/GxUtils/releases/latest><b><i>Download Latest Release - Windows</i></b></a></div>
 
-This is a Blender plugin that allows you to map out a Super Monkey Ball stage 
-in Blender, and export the model, stage configuration, and animation to 
-files usable by the custom level tools [SMB Workshop 2](https://gitlab.com/CraftedCart/smblevelworkshop2) 
-and [GxUtils](https://github.com/TheBombSquad/GxUtils). This plugin is a port of CraftedCart's 
-Blend2SMBStage plugin for Blender 2.7x to the latest version of Blender, with support for new 
-Workshop 2 functionality not found in previous versions, along with other usability improvements. 
+## Introduction
+<img src=https://github-production-user-asset-6210df.s3.amazonaws.com/35253266/257081449-a280e1f6-c9ac-4ce6-9e55-9fbefea416e2.png width="400" align="right">
+
+BlendToSMBStage2 is a Blender plugin that assists with the creation of custom Super Monkey Ball stages.
+With this plugin, you can create a 3D model for your stage in Blender, map out item, goal, and starting 
+placements, and then export the model and stage configuration directly into Super Monkey Ball 2.
+This plugin utilizes the custom level tools [SMB Workshop 2](https://gitlab.com/CraftedCart/smblevelworkshop2) 
+and [GxUtils](https://github.com/TheBombSquad/GxUtils) for generating stage configuration and model files compatible
+with the original game. This plugin started as a re-write and port of CraftedCart's Blend2SMBStage plugin for Blender 2.7x
+with extended functionality.
 The original version of the plugin can be found [here.](https://gitlab.com/CraftedCart/BlendToSMBStage)
 
-The latest version of CraftedCart's SMB Workshop 2 is included, but can be separately downloaded [here.](https://craftedcart.gitlab.io/ws2web/#/download)
+The latest version of CraftedCart's SMB Workshop 2 is built in, but can be separately downloaded [here.](https://craftedcart.gitlab.io/ws2web/#/download)
+
+The latest version of GxModelViewer is also included, and can be downloaded [here.](https://github.com/TheBombSquad/GxUtils/releases/latest)
 
 A guide to the usage of this tool, along with documentation in regards to Monkey Ball modding as a whole, can be found [here.](https://docs.google.com/document/d/194QZxrimkjHEzSSMKbafs86PnmiYmFBZUnoaEnks4es/edit)
 
 ## Setup
-To download the plugin, [click here to get the latest list of releases](https://github.com/TheBombSquad/BlendToSMBStage2/releases), then download the latest .ZIP file. You don't need to extract the files in the downloaded .zip file. Open Blender (any version later than 2.80), and go to Edit-\>Preferences in the menu bar. Go to the 'Add-ons' tab, and select 'Install...'. Navigate to, and select the downloaded .zip file. Search for "BlendToSMBStage2" in the Add-ons list, and then tick the checkmark next to the addon. The add-on will then be installed. You can access the stage object functionality through the 'Blend2SMB' tab on the right of the 3D viewport. If you can't see it, click the grey `+` icon in the top right of the 3D viewport.
+### Installation
+[The latest version of the plugin can be downloaded at this link.](https://github.com/TheBombSquad/GxUtils/releases/latest). You do not need to extract the files in the downloaded .zip file. Open Blender (any version later than 2.80), and go to Edit-\>Preferences in the menu bar. Go to the 'Add-ons' tab, and select 'Install...'. Navigate to, and select the downloaded .zip file. Search for "BlendToSMBStage2" in the Add-ons list, and then tick the checkmark next to the addon. The add-on will then be installed. You can access the stage object functionality through the 'Blend2SMB' tab on the right of the 3D viewport. If you can't see it, click the grey `+` icon in the top right of the 3D viewport.
 
-If you are running on a Linux-based operating system, you may need to give executable permissions to ws2lzfrontend and GxModelViewer, located in the plugin's folder. The plugin may be installed in the `.config/blender/3.2/scripts/addons/BlendToSMBStage2` folder in your home directory, where `3.2` is your version of Blender.
-
+### Legacy Blender versions
 If you want to import an old Blend file from 2.79 or earlier, you will need to convert the file to Cycles in order to get materials to show up properly. You can use the plugin 'Material Utils Special' in 2.79 to achieve this. This is an add-on that can be installed in a default installation of 2.79. You can go to File-\>User Preferences and locate it in the Add-ons tab. If this process is not done, you'll need to re-assign textures to your stage.
 
 [For versions of Blender 2.79 or earlier, linked is a script you can paste into the text editor](https://github.com/TheBombSquad/batch-convert-to-cycles/blob/master/batch_convert_to_cycles.py) that takes a folder as input, and converts all of the Blend files in the folder to ones compatible with 2.8. This script uses the 'Material Utils Special' plugin, and it needs to be enabled before running the script. You can modify the folder that is to be used in the text editor. 
 
-## Changes
-### Change List
+## Changes and Documentation
+### Changes from Blend2SMBStage plugin for Blender 2.7x
 * Now supports Blender versions 2.80 and higher. Not compatible with 2.79b or earlier versions of Blender.
 * Added support for the following stage objects:
     - Jamabars
@@ -135,10 +149,6 @@ scrolling and non-scrolling textures.
 ## Known Bugs
 There are some bugs that are known, these will hopefully be fixed in the future. 
 
-* Export may fail occasionally on certain systems where the system language is not
-English.
-* Transparency may be incorrectly applied to certain materials, this may also
-be isolated to systems where the default language is not English.
 * Rotating background objects will not properly apply the transform to all of the
 keyframes of a background object's animation. 
 * Fallout plane height is not transferred from very old (<2.80) Blend files, and will 
@@ -146,3 +156,9 @@ default to -10.
 * Stage objects do not automatically draw on file load. You need to press
 the "Draw Stage Objects" button to make them show up.
 * Conveyor vectors don't look very pretty
+
+## Special Thanks
+
+Thanks to [ComplexPlane](https://github.com/ComplexPlane), [alion8me](https://github.com/alion8me), [CraftedCart](https://github.com/CraftedCart/), [dannymcgarvey](https://github.com/dannymcgarvey) and [Cutsman-Sam](https://github.com/cutsman-sam) for their code contributions to this project!
+
+Thanks to [CraftedCart](https://github.com/CraftedCart/) for the logo design!
