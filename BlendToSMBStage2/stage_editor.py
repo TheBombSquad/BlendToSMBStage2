@@ -108,10 +108,17 @@ class OBJECT_OT_convert_selected(bpy.types.Operator):
 
         # Remove existing prefixes
         if bracket_re.match(selected.name) and self.prefix not in no_replace:
-            selected.name = bracket_re.sub(self.prefix, "")
+            cleaned_name = bracket_re.sub(self.prefix, "")
+            selected.name = cleaned_name
+            if selected.data is not None and selected.data.name is not None:
+                selected.data.name = cleaned_name
+
 
         # Append new prefix
-        selected.name = f"{self.prefix} {selected.name}"
+        new_name = f"{self.prefix} {selected.name}"
+        selected.name = new_name
+        if selected.data is not None and selected.data.name is not None:
+            selected.data.name = new_name
 
         # Construct the newly converted object
         for desc in descriptors.descriptors:
