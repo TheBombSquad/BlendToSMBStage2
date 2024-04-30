@@ -1,7 +1,6 @@
 import itertools
 import stat
 import bpy
-import bgl
 import bmesh
 import os
 import copy
@@ -11,6 +10,7 @@ import random
 import math
 import re
 import locale
+import gpu
 
 from . import statics, stage_object_drawing, generate_config, dimension_dict
 
@@ -678,8 +678,8 @@ class MATERIAL_OT_set_material_flags(bpy.types.Operator):
 
 # Callback function for drawing stage objects, as well as the fallout plane grid
 def draw_callback_3d(self, context):
-    bgl.glEnable(bgl.GL_BLEND)
-    bgl.glEnable(bgl.GL_DEPTH_TEST)
+    gpu.state.blend_set("ALPHA")
+
     if context.scene.draw_stage_objects:
         # Draw objects
         for obj in context.scene.objects:

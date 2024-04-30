@@ -14,7 +14,7 @@ bl_info = {
     "description": "Addon for creating Super Monkey Ball stage configuration files",
     "author": "CraftedCart, The BombSquad",
     "version": (2, 2),
-    "blender": (3, 3, 0), 
+    "blender": (4, 1, 1),
     "location": "\"Blend2SMB\" vertical tab in 3D viewport",
     "category": "3D View",
     "doc_url": "https://docs.google.com/document/d/194QZxrimkjHEzSSMKbafs86PnmiYmFBZUnoaEnks4es",

@@ -1,6 +1,5 @@
 import math
 import gpu
-import bgl
 import bpy
 
 from gpu_extras.batch import batch_for_shader
@@ -27,7 +26,7 @@ def rotate_gl(euler_rot):
     gpu.matrix.multiply_matrix(final_rot)
 
 def draw_batch(coord, color, primitive_type):
-    shader = gpu.shader.from_builtin("3D_UNIFORM_COLOR")
+    shader = gpu.shader.from_builtin("UNIFORM_COLOR")
     batch = batch_for_shader(shader, primitive_type, {"pos": coord})
     shader.bind()
     shader.uniform_float("color", color)
@@ -176,7 +175,7 @@ def draw_start(obj):
 
     lineWidth = [(6, COLOR_BLACK), (2, COLOR_BLUE)]
     for width, color in lineWidth:
-        bgl.glLineWidth(width)
+        gpu.state.line_width_set(width)
         draw_sphere(ZERO_VEC, 0.5, color)
         draw_arrow(ZERO_VEC, (0.0, 1.5, 0.0), color)
 
@@ -190,7 +189,7 @@ def draw_goal(obj, goal_color):
 
     lineWidth = [(6, COLOR_BLACK), (2, goal_color)]
     for width, color in lineWidth:
-        bgl.glLineWidth(width)
+        gpu.state.line_width_set(width)
         # Goal ring
         draw_cylinder((-2.95,1.22,-0.1), ((math.pi*1/2),0,-(math.pi*3/8)), 2.35, 0.2, 16, color, radians=((7/4)*math.pi))
         draw_cylinder((-2.95,1.22,-0.1), ((math.pi*1/2),0,-(math.pi*3/8)), 2.15, 0.2, 16, color, radians=((7/4)*math.pi))
@@ -214,7 +213,7 @@ def draw_bumper(obj):
 
     lineWidth = [(6, COLOR_BLACK), (2, COLOR_BLUE)]
     for width, color in lineWidth:
-        bgl.glLineWidth(width)
+        gpu.state.line_width_set(width)
         draw_cylinder(ZERO_VEC, ZERO_VEC, 0.25, 0.7, 8, color)
         draw_cylinder((0, 0, 0.28), ZERO_VEC, 0.4, 0.14, 8, color)
 
@@ -224,13 +223,13 @@ def draw_jamabar(obj):
     gpu.matrix.push()
     gpu.matrix.multiply_matrix(obj.matrix_world)
 
-    bgl.glLineWidth(6)
+    gpu.state.line_width_set(6)
     draw_box_scaled((0, 0, 0.5), (1, 1.35, 0.4), COLOR_BLACK)
     draw_box_scaled((0, -1.21, 0.5), (1, 1.075, 1), COLOR_BLACK)
     draw_box_scaled((0, 1.21, 0.5), (1, 1.075, 1), COLOR_BLACK)
     draw_arrow((0, 1.75, 0.5), (0, 4, 0.5), COLOR_BLACK)
 
-    bgl.glLineWidth(2)
+    gpu.state.line_width_set(2)
     draw_box_scaled((0, 0, 0.5), (1, 1.35, 0.4), COLOR_BLUE)
     draw_box_scaled((0, 3, 0.5), (1, 2.5, 1), COLOR_BLUE) # Extra box to show jamabar range
     draw_box_scaled((0, -1.21, 0.5), (1, 1.075, 1), COLOR_BLUE)
@@ -247,7 +246,7 @@ def draw_cone_col(obj):
 
     lineWidth = [(6, COLOR_BLACK), (2, COLOR_PURPLE)]
     for width, color in lineWidth:
-        bgl.glLineWidth(width)
+        gpu.state.line_width_set(width)
         draw_cylinder(ZERO_VEC, ZERO_VEC, 1, 1, 16, color, cone=True)
 
     gpu.matrix.pop()
@@ -260,7 +259,7 @@ def draw_sphere_col(obj):
 
     lineWidth = [(6, COLOR_BLACK), (2, COLOR_PURPLE)]
     for width, color in lineWidth:
-        bgl.glLineWidth(width)
+        gpu.state.line_width_set(width)
         draw_sphere(ZERO_VEC, 1, color, detailed=True)
 
     gpu.matrix.pop()
@@ -273,7 +272,7 @@ def draw_cylinder_col(obj):
 
     lineWidth = [(6, COLOR_BLACK), (2, COLOR_PURPLE)]
     for width, color in lineWidth:
-        bgl.glLineWidth(width)
+        gpu.state.line_width_set(width)
         draw_cylinder((0,0,-0.5), ZERO_VEC, 1, 1, 16, color)
 
     gpu.matrix.pop()
@@ -284,7 +283,7 @@ def draw_fallout_volume(obj):
 
     lineWidth = [(6, COLOR_BLACK), (2, COLOR_RED_FAINT)]
     for width, color in lineWidth:
-        bgl.glLineWidth(width)
+        gpu.state.line_width_set(width)
         draw_box_scaled(ZERO_VEC, (1,1,1), color)
 
     gpu.matrix.pop()
@@ -299,7 +298,7 @@ def draw_switch(obj):
 
     lineWidth = [(6, COLOR_BLACK), (2, COLOR_BLUE)]
     for width, color in lineWidth:
-        bgl.glLineWidth(width)
+        gpu.state.line_width_set(width)
         draw_cylinder(ZERO_VEC, rotation_rad, 0.925, 0.15, 8, color)
         draw_cylinder(ZERO_VEC, rotation_rad, 0.725, 0.15, 8, color)
         draw_arrow(ZERO_VEC, (0.0, 1.5, 0.0), color)
@@ -321,7 +320,7 @@ def draw_wh(obj):
                     (-1.15, 0, 4.3),
                     (-2.15, 0, 0),
                     (2.15, 0, 0)]
-        bgl.glLineWidth(width)
+        gpu.state.line_width_set(width)
         draw_batch(wh_frame, color, "LINE_STRIP")
         gpu.matrix.push()
         gpu.matrix.multiply_matrix(Matrix.Rotation(math.radians(180), 4, 'Z'))
@@ -373,7 +372,7 @@ def draw_ig(obj, draw_collision_grid):
 
             gpu.matrix.multiply_matrix(grid_mtx)
 
-        bgl.glLineWidth(2)
+        gpu.state.line_width_set(2)
         draw_grid(startX, startY, stepX, stepY, stepCountX, stepCountY, 0, COLOR_GREEN_FAINT)
 
         gpu.matrix.pop()
@@ -394,7 +393,7 @@ def draw_ig(obj, draw_collision_grid):
         lineWidth = [(6, COLOR_BLACK), (2, COLOR_GREEN)]
         for (width, color) in lineWidth:
             coords = [ZERO_VEC, conveyorEndPos]
-            bgl.glLineWidth(width)
+            gpu.state.line_width_set(width)
             draw_batch(coords, color, 'LINES')
         gpu.matrix.pop()
 
@@ -406,7 +405,7 @@ def draw_generic_sphere(obj, radius, color):
 
     lineWidth = [(6, COLOR_BLACK), (2, color)]
     for width, color in lineWidth:
-        bgl.glLineWidth(width)
+        gpu.state.line_width_set(width)
         draw_sphere(ZERO_VEC, radius, color)
 
     gpu.matrix.pop()
@@ -419,7 +418,7 @@ def draw_booster(obj):
 
     lineWidth = [(6, COLOR_BLACK), (2, COLOR_RED)]
     for width, color in lineWidth:
-        bgl.glLineWidth(width)
+        gpu.state.line_width_set(width)
         draw_box_scaled(ZERO_VEC, (2,1.0,0), color)
         draw_arrow((0, 0.1, 0), (0, 0.1, 0), color)
 
@@ -433,7 +432,7 @@ def draw_golf_hole(obj):
 
     lineWidth = [(6, COLOR_BLACK), (2, COLOR_BLUE)]
     for width, color in lineWidth:
-        bgl.glLineWidth(width)
+        gpu.state.line_width_set(width)
         draw_cylinder(ZERO_VEC, ZERO_VEC, 1, 0, 12, color)
 
     gpu.matrix.pop()
@@ -446,7 +445,7 @@ def draw_seesaw_axis(obj):
     
     lineWidth = [(8, COLOR_BLACK), (4, COLOR_PURPLE)]
     for width, color in lineWidth:
-        bgl.glLineWidth(width)
+        gpu.state.line_width_set(width)
 
         dim = obj.dimensions
         scale = 1.25
