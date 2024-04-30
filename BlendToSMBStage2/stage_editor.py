@@ -679,6 +679,7 @@ class MATERIAL_OT_set_material_flags(bpy.types.Operator):
 # Callback function for drawing stage objects, as well as the fallout plane grid
 def draw_callback_3d(self, context):
     gpu.state.blend_set("ALPHA")
+    gpu.state.depth_test_set("LESS_EQUAL")
 
     if context.scene.draw_stage_objects:
         # Draw objects
