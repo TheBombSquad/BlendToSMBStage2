@@ -1097,10 +1097,10 @@ class OBJECT_OT_export_obj(bpy.types.Operator):
                     links.new(material_output_node.inputs['Surface'], principled_node.outputs['BSDF'])
                     links.new(principled_node.inputs['Base Color'], image_texture_node.outputs['Color'])
 
-        bpy.ops.export_scene.obj(
-                filepath = bpy.path.abspath(context.scene.export_model_path),
-                use_triangles=True,
-                use_selection=True,
+        bpy.ops.wm.obj_export(
+                filepath=bpy.path.abspath(context.scene.export_model_path),
+                export_triangulated_mesh=True,
+                export_selected_objects=True,
                 path_mode="RELATIVE",
             )
 
