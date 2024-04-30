@@ -28,20 +28,34 @@ A guide to the usage of this tool, along with documentation in regards to Monkey
 
 ## Setup
 ### Installation
-[The latest version of the plugin can be downloaded at this link](https://github.com/TheBombSquad/GxUtils/releases/latest). You do not need to extract the files in the downloaded .zip file. Open Blender (any version later than 2.80), and go to Edit-\>Preferences in the menu bar. Go to the 'Add-ons' tab, and select 'Install...'. Navigate to, and select the downloaded .zip file. Search for "BlendToSMBStage2" in the Add-ons list, and then tick the checkmark next to the addon. The add-on will then be installed. You can access the stage object functionality through the 'Blend2SMB' tab on the right of the 3D viewport. If you can't see it, click the grey `+` icon in the top right of the 3D viewport.
+[The latest version of the plugin can be downloaded at this link](https://github.com/TheBombSquad/GxUtils/releases/latest). You do not need to extract the files in the
+downloaded .zip file. Open Blender (any version later than 4.1.1), and go to Edit-\>Preferences in the menu bar. 
+Go to the 'Add-ons' tab, and select 'Install...'. Navigate to, and select the downloaded .zip file. Search for
+"BlendToSMBStage2" in the Add-ons list, and then tick the checkmark next to the addon. The add-on will then be installed. 
+You can access the stage object functionality through the 'Blend2SMB' tab on the right of the 3D viewport. If you can't 
+see it, click the grey `+` icon in the top right of the 3D viewport.
 
 ### Building for Linux
-BlendToSMBStage2 depends on certain tools to export files that are seperate from Blender. Because of this, the build script `linux-build.sh` has been provided for Linux users. The following dependencies are required, in addition to standard development tools commonly found in packages such as `base-devel` on Arch Linux:
+BlendToSMBStage2 depends on certain tools to export files that are seperate from Blender. Because of this, the build
+script `linux-build.sh` has been provided for Linux users. The following dependencies are required, in addition to
+standard development tools commonly found in packages such as `base-devel` on Arch Linux:
 ```
 cmake dotnet-sdk mono mono-msbuild
 qtbase5-dev qttools5-dev libglew-dev libglm-dev libassimp-dev libbullet-dev ninja-build
 ```
-Clone the repository, and then run the build script. The packaged plugin will be placed into a newly created `out` folder upon the completion of the script.
+Clone the repository, and then run the build script. The packaged plugin will be placed into a newly created `out`
+folder upon the completion of the script.
 
 ### Legacy Blender versions
-If you want to import an old Blend file from 2.79 or earlier, you will need to convert the file to Cycles in order to get materials to show up properly. You can use the plugin 'Material Utils Special' in 2.79 to achieve this. This is an add-on that can be installed in a default installation of 2.79. You can go to File-\>User Preferences and locate it in the Add-ons tab. If this process is not done, you'll need to re-assign textures to your stage.
+If you want to import an old Blend file from 2.79 or earlier, you will need to convert the file to Cycles in order to
+get materials to show up properly. You can use the plugin 'Material Utils Special' in 2.79 to achieve this. This is an
+add-on that can be installed in a default installation of 2.79. You can go to File-\>User Preferences and locate it in
+the Add-ons tab. If this process is not done, you'll need to re-assign textures to your stage.
 
-[For versions of Blender 2.79 or earlier, linked is a script you can paste into the text editor](https://github.com/TheBombSquad/batch-convert-to-cycles/blob/master/batch_convert_to_cycles.py) that takes a folder as input, and converts all of the Blend files in the folder to ones compatible with 2.8. This script uses the 'Material Utils Special' plugin, and it needs to be enabled before running the script. You can modify the folder that is to be used in the text editor. 
+[For versions of Blender 2.79 or earlier, linked is a script you can paste into the text editor](https://github.com/TheBombSquad/batch-convert-to-cycles/blob/master/batch_convert_to_cycles.py) that takes a folder
+as input, and converts all of the Blend files in the folder to ones compatible with 2.8. This script uses the 
+'Material Utils Special' plugin, and it needs to be enabled before running the script. You can modify the folder that
+is to be used in the text editor. 
 
 ## Changes and Documentation
 ### Changes from Blend2SMBStage plugin for Blender 2.7x
