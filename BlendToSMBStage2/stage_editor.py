@@ -756,7 +756,7 @@ class OBJECT_OT_generate_texture_scroll_preview(bpy.types.Operator):
                 frame_start = context.scene.frame_start
                 frame_end = context.scene.frame_end
                 u_end = (obj["texScrollUSpeed"] / 60) * frame_end
-                v_end = (obj["texScrollVSpeed"] / 60) * frame_end
+                v_end = -(obj["texScrollVSpeed"] / 60) * frame_end
 
                 offset[0] = 0.0
                 offset[1] = 0.0
