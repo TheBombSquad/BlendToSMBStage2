@@ -1491,9 +1491,9 @@ class OBJECT_OT_export_background(bpy.types.Operator):
                 if len(existing_channels) != 9:
                     first_frame_added_objs.append((exp.obj, existing_channels))
 
-                # We just add frame 0 keyframes on all needed channels, and use existing_chanenls to find out what needs to be removed after export
+                # We just add frame 0 keyframes on all needed channels, and use existing_channels to find out what needs to be removed after export
                 for curve_type in curve_types:
-                    exp.obj.keyframe_insert(curve_type, frame=begin_frame, options = {'INSERTKEY_NEEDED'})
+                    exp.obj.keyframe_insert(curve_type, frame=begin_frame, options = {'INSERTKEY_AVAILABLE'})
 
                 print("\tInserted frame zero keyframe for item group " + exp.obj.name)
 
@@ -1846,9 +1846,9 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
                 if len(existing_channels) != 9:
                     first_frame_added_objs.append((exp.obj, existing_channels))
                 
-                # We just add frame 0 keyframes on all needed channels, and use existing_chanenls to find out what needs to be removed after export
+                # We just add frame 0 keyframes on all needed channels, and use existing_channels to find out what needs to be removed after export
                 for curve_type in curve_types:
-                    exp.obj.keyframe_insert(curve_type, frame=begin_frame, options = {'INSERTKEY_NEEDED'})
+                    exp.obj.keyframe_insert(curve_type, frame=begin_frame, options={"INSERTKEY_AVAILABLE"})
 
                 print("\tInserted frame zero keyframe for item group " + exp.obj.name)
 
