@@ -17,10 +17,13 @@ class DescriptorModel(DescriptorBase):
         print("\tLevel model: " + obj.name)
 
         # Clean up model name
-        if obj.name == obj.data.name:
-            name = obj.name.replace(" ", "_")
-        else:
-            name = (obj.name + "_" + obj.data.name).replace(" ", "_")
+        # As of Blender 4.0, model names no longer include the mesh name, only the object name
+
+        # if obj.name == obj.data.name:
+        name = obj.name.replace(" ", "_")
+
+        # else:
+        #    name = (obj.name + "_" + obj.data.name).replace(" ", "_")
 
         if "[NODISP]" in name:
             dispName = "__" + name
