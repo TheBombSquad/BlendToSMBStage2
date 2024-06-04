@@ -69,6 +69,7 @@ echo "Packaging B2SMB2 in directory" $PWD
 echo "-------------------------------------------------------------------------------------"
 
 # Set up working directory for packaging
+rm -r out || true
 mkdir -v out || true
 cd out
 
@@ -88,7 +89,7 @@ mkdir BlendToSMBStage2-Out || true
 mv $(ls --ignore=BlendToSMBStage2-Out .) BlendToSMBStage2-Out
 mv BlendToSMBStage2-Out BlendToSMBStage2
 rm BlendToSMBStage2-Linux.zip || true
-7z a BlendToSMBStage2-Linux.zip ./BlendToSMBStage2
+7z a BlendToSMBStage2-Linux.zip ./BlendToSMBStage2 -x!out/ -x!BlendToSMBStage2-Linux.zip
 
 # Clean up
 rm -rv BlendToSMBStage2
