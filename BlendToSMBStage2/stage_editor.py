@@ -1474,7 +1474,7 @@ class OBJECT_OT_export_background(bpy.types.Operator):
         # This also fixes weirdness with background and foreground objects
         for exp in itertools.chain(fg_export_datas, bg_export_datas):
             if exp.obj.animation_data is not None and exp.obj.animation_data.action is not None:
-                existing_channels = []
+                channels_with_frame_zero_keyframes = []
                 fcurves = exp.obj.animation_data.action.fcurves
 
                 # Find existing channels with frame 0 keyframes
@@ -1483,19 +1483,20 @@ class OBJECT_OT_export_background(bpy.types.Operator):
                     if fcurve is not None:
                         for keyframe_index in range(len(fcurve.keyframe_points)):
                             if fcurve.keyframe_points[keyframe_index].co[0] == float(begin_frame):
-                                existing_channels.append((index, curve_type))
+                                channels_with_frame_zero_keyframes.append((index, curve_type))
                                 # print(f"Added existing channel {curve_type}[{index}]")
                                 break
 
-                # If not all of the channels have frame 0 keyframes, we need to add frame 0 keyframes on those channels
-                if len(existing_channels) != 9:
-                    first_frame_added_objs.append((exp.obj, existing_channels))
+                # We need to add keyframes on frame 0 if not all channels have keyframes there
+                if len(channels_with_frame_zero_keyframes) != 9:
+                    first_frame_added_objs.append((exp.obj, channels_with_frame_zero_keyframes))
 
-                # We just add frame 0 keyframes on all needed channels, and use existing_channels to find out what needs to be removed after export
-                for curve_type in curve_types:
-                    exp.obj.keyframe_insert(curve_type, frame=begin_frame, options = {'INSERTKEY_AVAILABLE'})
+                # Adds keyframes to needed channels
+                for (index, curve_type) in all_curve_types:
+                    if (index, curve_type) in channels_with_frame_zero_keyframes: continue
+                    exp.obj.keyframe_insert(curve_type, index=index, frame=begin_frame)
 
-                print("\tInserted frame zero keyframe for item group " + exp.obj.name)
+                print("\tInserted frame zero keyframe for background/foreground object " + exp.obj.name)
 
         # Generate initial animation data based on fcurve keyframes
         for exp in itertools.chain(fg_export_datas, bg_export_datas):
@@ -1829,7 +1830,7 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
         # This also fixes weirdness with background and foreground objects
         for exp in itertools.chain(ig_export_datas, fg_export_datas, bg_export_datas):
             if exp.obj.animation_data is not None and exp.obj.animation_data.action is not None:
-                existing_channels = []
+                channels_with_frame_zero_keyframes = []
                 fcurves = exp.obj.animation_data.action.fcurves
 
                 # Find existing channels with frame 0 keyframes
@@ -1838,17 +1839,18 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
                     if fcurve is not None:
                         for keyframe_index in range(len(fcurve.keyframe_points)):
                             if fcurve.keyframe_points[keyframe_index].co[0] == float(begin_frame):
-                                existing_channels.append((index, curve_type))
+                                channels_with_frame_zero_keyframes.append((index, curve_type))
                                 # print(f"Added existing channel {curve_type}[{index}]")
                                 break
 
-                # If not all of the channels have frame 0 keyframes, we need to add frame 0 keyframes on those channels
-                if len(existing_channels) != 9:
-                    first_frame_added_objs.append((exp.obj, existing_channels))
-                
-                # We just add frame 0 keyframes on all needed channels, and use existing_channels to find out what needs to be removed after export
-                for curve_type in curve_types:
-                    exp.obj.keyframe_insert(curve_type, frame=begin_frame, options={"INSERTKEY_AVAILABLE"})
+                # We need to add keyframes on frame 0 if not all channels have keyframes there
+                if len(channels_with_frame_zero_keyframes) != 9:
+                    first_frame_added_objs.append((exp.obj, channels_with_frame_zero_keyframes))
+
+                # Adds keyframes to needed channels
+                for (index, curve_type) in all_curve_types:
+                    if (index, curve_type) in channels_with_frame_zero_keyframes: continue
+                    exp.obj.keyframe_insert(curve_type, index=index, frame=begin_frame)
 
                 print("\tInserted frame zero keyframe for item group " + exp.obj.name)
 
