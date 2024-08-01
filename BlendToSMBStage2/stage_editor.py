@@ -627,6 +627,9 @@ class MATERIAL_PT_blend2smb_material(bpy.types.Panel):
         scroll = layout.operator("material.set_material_flags", text="Texture Scroll")
         scroll.name = "SCROLL"
         scroll.flag = "MATFLAG"
+        mask = layout.operator("material.set_material_flags", text="Alpha Masking")
+        mask.name = "MASK"
+        mask.flag = "MATFLAG"
 
 # Operator for marking a material as unshaded
 class MATERIAL_OT_mark_unshaded(bpy.types.Operator):
