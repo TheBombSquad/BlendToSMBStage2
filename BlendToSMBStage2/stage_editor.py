@@ -635,7 +635,6 @@ class MATERIAL_PT_blend2smb_material(bpy.types.Panel):
 class MATERIAL_OT_mark_unshaded(bpy.types.Operator):
     bl_idname = "material.mark_unshaded"
     bl_label = "Mark as Unshaded"
-    bl_description = "Whether or not visual representations of stage objects should be drawn"
     bl_options = {'UNDO'}
 
     def execute(self, context):
@@ -664,6 +663,46 @@ class MATERIAL_OT_mark_unshaded(bpy.types.Operator):
                 links.new(material_output_node.inputs['Surface'], emission_node.outputs['Emission'])
                 links.new(emission_node.inputs['Color'], image_texture_node.outputs['Color'])
                 mat.name = "[UNSHADED] " + mat.name
+
+        return {'FINISHED'}
+
+# Operator for marking a material as two-sided
+class MATERIAL_OT_mark_twosided(bpy.types.Operator):
+    bl_idname = "material.mark_twosided"
+    bl_label = "Mark as Two-sided"
+    bl_options = {'UNDO'}
+
+            mat.name = "[TWOSIDED] " + mat.name
+
+        return {'FINISHED'}
+
+# Operator for marking a material as unaffected by fog
+class MATERIAL_OT_mark_nofog(bpy.types.Operator):
+    bl_idname = "material.mark_nofog"
+    bl_label = "Mark as Unaffected by Fog"
+    bl_options = {'UNDO'}
+
+            mat.name = "[NOFOG] " + mat.name
+
+        return {'FINISHED'}
+
+# Operator for marking a material as screen blend
+class MATERIAL_OT_mark_screenblend(bpy.types.Operator):
+    bl_idname = "material.mark_screen"
+    bl_label = "Mark as Screen Blend"
+    bl_options = {'UNDO'}
+
+            mat.name = "[SCREEN] " + mat.name
+
+        return {'FINISHED'}
+
+# Operator for marking a material as additive blend
+class MATERIAL_OT_mark_twosided(bpy.types.Operator):
+    bl_idname = "material.mark_additive"
+    bl_label = "Mark as Additive Blend"
+    bl_options = {'UNDO'}
+
+            mat.name = "[ADDITIVE] " + mat.name
 
         return {'FINISHED'}
 
