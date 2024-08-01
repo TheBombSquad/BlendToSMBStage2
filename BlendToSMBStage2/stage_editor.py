@@ -672,9 +672,9 @@ class MATERIAL_OT_mark_twosided(bpy.types.Operator):
     bl_label = "Mark as Two-sided"
     bl_options = {'UNDO'}
 
-            mat.name = "[TWOSIDED] " + mat.name
+        mat.name = "[TWOSIDED] " + mat.name
 
-        return {'FINISHED'}
+    return {'FINISHED'}
 
 # Operator for marking a material as unaffected by fog
 class MATERIAL_OT_mark_nofog(bpy.types.Operator):
@@ -682,9 +682,9 @@ class MATERIAL_OT_mark_nofog(bpy.types.Operator):
     bl_label = "Mark as Unaffected by Fog"
     bl_options = {'UNDO'}
 
-            mat.name = "[NOFOG] " + mat.name
+        mat.name = "[NOFOG] " + mat.name
 
-        return {'FINISHED'}
+    return {'FINISHED'}
 
 # Operator for marking a material as screen blend
 class MATERIAL_OT_mark_screenblend(bpy.types.Operator):
@@ -692,9 +692,9 @@ class MATERIAL_OT_mark_screenblend(bpy.types.Operator):
     bl_label = "Mark as Screen Blend"
     bl_options = {'UNDO'}
 
-            mat.name = "[SCREEN] " + mat.name
+        mat.name = "[SCREEN] " + mat.name
 
-        return {'FINISHED'}
+    return {'FINISHED'}
 
 # Operator for marking a material as additive blend
 class MATERIAL_OT_mark_twosided(bpy.types.Operator):
@@ -702,9 +702,9 @@ class MATERIAL_OT_mark_twosided(bpy.types.Operator):
     bl_label = "Mark as Additive Blend"
     bl_options = {'UNDO'}
 
-            mat.name = "[ADDITIVE] " + mat.name
+        mat.name = "[ADDITIVE] " + mat.name
 
-        return {'FINISHED'}
+    return {'FINISHED'}
 
 # Operator for setting texture type of a material
 class MATERIAL_OT_set_material_flags(bpy.types.Operator):
