@@ -724,19 +724,25 @@ class MATERIAL_OT_set_material_flags(bpy.types.Operator):
     bl_label = "Set Texture Type"
     bl_description = "Sets the material flags of the selected material."
     bl_options = {'UNDO'}
+    
     name: bpy.props.StringProperty(default="CMPR")
     flag: bpy.props.StringProperty(default="TEX")
 
     def execute(self, context):
         mat = context.material
 
-        if f"[{self.flag}_" in mat.name:
+        # Check if the flag is "TEX" and if the material name contains the flag
+        if self.flag == "TEX" and f"[{self.flag}_" in mat.name:
+            # Replace the part of the name following the flag
             mat.name = re.sub(fr"(?<={self.flag}_)[^\]]*", self.name, mat.name)
+        elif self.flag != "TEX":
+            # Append a new flag and name if the flag is not "TEX"
+            mat.name = f"[{self.flag}_{self.name}] {mat.name}"
         else:
+            # If the flag is "TEX" but not found in the name, append the flag and name
             mat.name = f"[{self.flag}_{self.name}] {mat.name}"
 
         return {'FINISHED'}
-
 # Callback function for drawing stage objects, as well as the fallout plane grid
 def draw_callback_3d(self, context):
     gpu.state.blend_set("ALPHA")
