@@ -584,6 +584,10 @@ class MATERIAL_PT_blend2smb_material(bpy.types.Panel):
         layout = self.layout
 
         layout.operator("material.mark_unshaded")
+        layout.operator("material.mark_twosided")
+        layout.operator("material.mark_nofog")
+        layout.operator("material.mark_screen")
+        layout.operator("material.mark_additive")
         layout.prop(context.material, "mesh_preset")
         layout.prop(context.material, "mat_preset")
 
@@ -665,47 +669,55 @@ class MATERIAL_OT_mark_unshaded(bpy.types.Operator):
                 mat.name = "[UNSHADED] " + mat.name
 
         return {'FINISHED'}
-
+        
 # Operator for marking a material as two-sided
 class MATERIAL_OT_mark_twosided(bpy.types.Operator):
     bl_idname = "material.mark_twosided"
-    bl_label = "Mark as Two-sided"
+    bl_label = "Mark as Two-Sided"
     bl_options = {'UNDO'}
 
+    def execute(self, context):
+        mat = context.material 
         mat.name = "[TWOSIDED] " + mat.name
 
-    return {'FINISHED'}
-
+        return {'FINISHED'}
+        
 # Operator for marking a material as unaffected by fog
 class MATERIAL_OT_mark_nofog(bpy.types.Operator):
     bl_idname = "material.mark_nofog"
     bl_label = "Mark as Unaffected by Fog"
     bl_options = {'UNDO'}
 
+    def execute(self, context):
+        mat = context.material 
         mat.name = "[NOFOG] " + mat.name
 
-    return {'FINISHED'}
-
+        return {'FINISHED'}
+        
 # Operator for marking a material as screen blend
-class MATERIAL_OT_mark_screenblend(bpy.types.Operator):
+class MATERIAL_OT_mark_screen(bpy.types.Operator):
     bl_idname = "material.mark_screen"
     bl_label = "Mark as Screen Blend"
     bl_options = {'UNDO'}
 
+    def execute(self, context):
+        mat = context.material 
         mat.name = "[SCREEN] " + mat.name
 
-    return {'FINISHED'}
-
+        return {'FINISHED'}
+        
 # Operator for marking a material as additive blend
-class MATERIAL_OT_mark_twosided(bpy.types.Operator):
+class MATERIAL_OT_mark_additive(bpy.types.Operator):
     bl_idname = "material.mark_additive"
     bl_label = "Mark as Additive Blend"
     bl_options = {'UNDO'}
 
+    def execute(self, context):
+        mat = context.material 
         mat.name = "[ADDITIVE] " + mat.name
 
-    return {'FINISHED'}
-
+        return {'FINISHED'}
+        
 # Operator for setting texture type of a material
 class MATERIAL_OT_set_material_flags(bpy.types.Operator):
     bl_idname = "material.set_material_flags"
