@@ -635,6 +635,7 @@ class MATERIAL_PT_blend2smb_material(bpy.types.Panel):
         mask.name = "MASK"
         mask.flag = "MATFLAG"
 
+# TODO: We really should make these checkboxes at some point, instead of just buttons that append text on every click
 # Operator for marking a material as unshaded
 class MATERIAL_OT_mark_unshaded(bpy.types.Operator):
     bl_idname = "material.mark_unshaded"
