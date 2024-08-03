@@ -584,6 +584,10 @@ class MATERIAL_PT_blend2smb_material(bpy.types.Panel):
         layout = self.layout
 
         layout.operator("material.mark_unshaded")
+        layout.operator("material.mark_twosided")
+        layout.operator("material.mark_nofog")
+        layout.operator("material.mark_screen")
+        layout.operator("material.mark_additive")
         layout.prop(context.material, "mesh_preset")
         layout.prop(context.material, "mat_preset")
 
@@ -627,12 +631,15 @@ class MATERIAL_PT_blend2smb_material(bpy.types.Panel):
         scroll = layout.operator("material.set_material_flags", text="Texture Scroll")
         scroll.name = "SCROLL"
         scroll.flag = "MATFLAG"
+        mask = layout.operator("material.set_material_flags", text="Alpha Masking")
+        mask.name = "MASK"
+        mask.flag = "MATFLAG"
 
+# TODO: We really should make these checkboxes at some point, instead of just buttons that append text on every click
 # Operator for marking a material as unshaded
 class MATERIAL_OT_mark_unshaded(bpy.types.Operator):
     bl_idname = "material.mark_unshaded"
     bl_label = "Mark as Unshaded"
-    bl_description = "Whether or not visual representations of stage objects should be drawn"
     bl_options = {'UNDO'}
 
     def execute(self, context):
@@ -663,26 +670,80 @@ class MATERIAL_OT_mark_unshaded(bpy.types.Operator):
                 mat.name = "[UNSHADED] " + mat.name
 
         return {'FINISHED'}
+        
+# Operator for marking a material as two-sided
+class MATERIAL_OT_mark_twosided(bpy.types.Operator):
+    bl_idname = "material.mark_twosided"
+    bl_label = "Mark as Two-Sided"
+    bl_options = {'UNDO'}
 
+    def execute(self, context):
+        mat = context.material 
+        mat.name = "[TWOSIDED] " + mat.name
+
+        return {'FINISHED'}
+        
+# Operator for marking a material as unaffected by fog
+class MATERIAL_OT_mark_nofog(bpy.types.Operator):
+    bl_idname = "material.mark_nofog"
+    bl_label = "Mark as Unaffected by Fog"
+    bl_options = {'UNDO'}
+
+    def execute(self, context):
+        mat = context.material 
+        mat.name = "[NOFOG] " + mat.name
+
+        return {'FINISHED'}
+        
+# Operator for marking a material as screen blend
+class MATERIAL_OT_mark_screen(bpy.types.Operator):
+    bl_idname = "material.mark_screen"
+    bl_label = "Mark as Screen Blend"
+    bl_options = {'UNDO'}
+
+    def execute(self, context):
+        mat = context.material 
+        mat.name = "[SCREEN] " + mat.name
+
+        return {'FINISHED'}
+        
+# Operator for marking a material as additive blend
+class MATERIAL_OT_mark_additive(bpy.types.Operator):
+    bl_idname = "material.mark_additive"
+    bl_label = "Mark as Additive Blend"
+    bl_options = {'UNDO'}
+
+    def execute(self, context):
+        mat = context.material 
+        mat.name = "[ADDITIVE] " + mat.name
+
+        return {'FINISHED'}
+        
 # Operator for setting texture type of a material
 class MATERIAL_OT_set_material_flags(bpy.types.Operator):
     bl_idname = "material.set_material_flags"
     bl_label = "Set Texture Type"
     bl_description = "Sets the material flags of the selected material."
     bl_options = {'UNDO'}
+    
     name: bpy.props.StringProperty(default="CMPR")
     flag: bpy.props.StringProperty(default="TEX")
 
     def execute(self, context):
         mat = context.material
 
-        if f"[{self.flag}_" in mat.name:
+        # Check if the flag is "TEX" and if the material name contains the flag
+        if self.flag == "TEX" and f"[{self.flag}_" in mat.name:
+            # Replace the part of the name following the flag
             mat.name = re.sub(fr"(?<={self.flag}_)[^\]]*", self.name, mat.name)
+        elif self.flag != "TEX":
+            # Append a new flag and name if the flag is not "TEX"
+            mat.name = f"[{self.flag}_{self.name}] {mat.name}"
         else:
+            # If the flag is "TEX" but not found in the name, append the flag and name
             mat.name = f"[{self.flag}_{self.name}] {mat.name}"
 
         return {'FINISHED'}
-
 # Callback function for drawing stage objects, as well as the fallout plane grid
 def draw_callback_3d(self, context):
     gpu.state.blend_set("ALPHA")

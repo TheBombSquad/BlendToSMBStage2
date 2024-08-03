@@ -24,16 +24,12 @@ class DescriptorFG(DescriptorBase):
             fg_xml = generate_config.generate_generic_obj_element(obj, "foregroundModel", parent_element, position=True, rotation=True, scale=True, name=False, static_bg=True)
 
         # Cleans up names
-        if obj.data == None or obj.name == obj.data.name:
-            if "[EXT:" in obj.name:
+        if "[EXT:" in obj.name:
                 model = etree.SubElement(fg_xml, "name")
                 model.text = re.search(r".*\[EXT:(.*)\].*", obj.name).group(1)
-            else:
-                model = etree.SubElement(fg_xml, "name")
-                model.text = obj.name.replace(" ", "_")
         else:
             model = etree.SubElement(fg_xml, "name")
-            model.text = (obj.name + "_" + obj.data.name).replace(" ", "_")
+            model.text = obj.name.replace(" ", "_")
 
         # Model mesh type
         if "meshType" in obj.keys():
