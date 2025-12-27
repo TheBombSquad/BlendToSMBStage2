@@ -4,6 +4,7 @@ import bpy
 
 from gpu_extras.batch import batch_for_shader
 from mathutils import Matrix, Vector, Euler
+from bpy_extras import anim_utils
 
 COLOR_BLACK = (0.0, 0.0, 0.0, 0.8)
 COLOR_BLUE = (0.13, 0.59, 0.95, 0.8)
@@ -349,6 +350,8 @@ def draw_ig(obj, draw_collision_grid):
 
         if obj.animation_data is not None and obj.animation_data.action is not None:
             action = obj.animation_data.action
+            action_slot = obj.animation_data.action_slot
+            channelbag = anim_utils.action_get_channelbag_for_slot(action, action_slot)
 
             start_frame = bpy.context.scene.frame_start
             current_frame = bpy.context.scene.frame_current
@@ -357,12 +360,12 @@ def draw_ig(obj, draw_collision_grid):
             rot_delta = Euler((0,0,0), rot_mode)
 
             for i in range(3):
-                if action.fcurves.find("location", index=i):
-                    c = action.fcurves.find("location", index=i)
+                if channelbag.fcurves.find("location", index=i):
+                    c = channelbag.fcurves.find("location", index=i)
                     delta = c.evaluate(current_frame) - c.evaluate(start_frame)
                     pos_delta[i] = delta
-                if action.fcurves.find("rotation_euler", index=i):
-                    c = action.fcurves.find("rotation_euler", index=i)
+                if channelbag.fcurves.find("rotation_euler", index=i):
+                    c = channelbag.fcurves.find("rotation_euler", index=i)
                     delta = c.evaluate(current_frame) - c.evaluate(start_frame)
                     rot_delta[i] = delta
 

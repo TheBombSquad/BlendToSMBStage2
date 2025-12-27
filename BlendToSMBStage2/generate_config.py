@@ -3,6 +3,7 @@ import math
 from sys import platform
 
 from mathutils import Vector
+from bpy_extras import anim_utils
 
 import xml.etree.ElementTree as etree
 
@@ -112,48 +113,54 @@ def generate_keyframe_anim_data(obj, anim_data: AnimData):
     if obj.animation_data is None or obj.animation_data.action is None:
         return
 
-    fcurves = obj.animation_data.action.fcurves
-    if (fcurve := fcurves.find("location", index=0)) is not None:
+    action = obj.animation_data.action
+    action_slot = obj.animation_data.action_slot
+    channelbag = anim_utils.action_get_channelbag_for_slot(action, action_slot)
+
+    if (fcurve := channelbag.fcurves.find("location", index=0)) is not None:
         _write_fcurve_keyframe_values(obj, anim_data.pos_x_channel, fcurve)
-    if (fcurve := fcurves.find("location", index=1)) is not None:
+    if (fcurve := channelbag.fcurves.find("location", index=1)) is not None:
         _write_fcurve_keyframe_values(obj, anim_data.pos_y_channel, fcurve)
-    if (fcurve := fcurves.find("location", index=2)) is not None:
+    if (fcurve := channelbag.fcurves.find("location", index=2)) is not None:
         _write_fcurve_keyframe_values(obj, anim_data.pos_z_channel, fcurve)
-    if (fcurve := fcurves.find("rotation_euler", index=0)) is not None:
+    if (fcurve := channelbag.fcurves.find("rotation_euler", index=0)) is not None:
         _write_fcurve_keyframe_values(obj, anim_data.rot_x_channel, fcurve)
-    if (fcurve := fcurves.find("rotation_euler", index=1)) is not None:
+    if (fcurve := channelbag.fcurves.find("rotation_euler", index=1)) is not None:
         _write_fcurve_keyframe_values(obj, anim_data.rot_y_channel, fcurve)
-    if (fcurve := fcurves.find("rotation_euler", index=2)) is not None:
+    if (fcurve := channelbag.fcurves.find("rotation_euler", index=2)) is not None:
         _write_fcurve_keyframe_values(obj, anim_data.rot_z_channel, fcurve)
-    if (fcurve := fcurves.find("scale", index=0)) is not None:
+    if (fcurve := channelbag.fcurves.find("scale", index=0)) is not None:
         _write_fcurve_keyframe_values(obj, anim_data.scale_x_channel, fcurve)
-    if (fcurve := fcurves.find("scale", index=1)) is not None:
+    if (fcurve := channelbag.fcurves.find("scale", index=1)) is not None:
         _write_fcurve_keyframe_values(obj, anim_data.scale_y_channel, fcurve)
-    if (fcurve := fcurves.find("scale", index=2)) is not None:
+    if (fcurve := channelbag.fcurves.find("scale", index=2)) is not None:
         _write_fcurve_keyframe_values(obj, anim_data.scale_z_channel, fcurve)
 
 def generate_per_frame_anim_data(obj, anim_data: AnimData):
     if obj.animation_data is None or obj.animation_data.action is None:
         return
 
-    fcurves = obj.animation_data.action.fcurves
-    if fcurves.find("location", index=0) is not None:
+    action = obj.animation_data.action
+    action_slot = obj.animation_data.action_slot
+    channelbag = anim_utils.action_get_channelbag_for_slot(action, action_slot)
+
+    if channelbag.fcurves.find("location", index=0) is not None:
         _write_obj_prop_at_current_frame(obj, anim_data.pos_x_channel, obj.location.x)
-    if fcurves.find("location", index=1) is not None:
+    if channelbag.fcurves.find("location", index=1) is not None:
         _write_obj_prop_at_current_frame(obj, anim_data.pos_y_channel, -obj.location.y)
-    if fcurves.find("location", index=2) is not None:
+    if channelbag.fcurves.find("location", index=2) is not None:
         _write_obj_prop_at_current_frame(obj, anim_data.pos_z_channel, obj.location.z)
-    if fcurves.find("rotation_euler", index=0) is not None:
+    if channelbag.fcurves.find("rotation_euler", index=0) is not None:
         _write_obj_prop_at_current_frame(obj, anim_data.rot_x_channel, math.degrees(obj.rotation_euler.x))
-    if fcurves.find("rotation_euler", index=1) is not None:
+    if channelbag.fcurves.find("rotation_euler", index=1) is not None:
         _write_obj_prop_at_current_frame(obj, anim_data.rot_y_channel, -math.degrees(obj.rotation_euler.y))
-    if fcurves.find("rotation_euler", index=2) is not None:
+    if channelbag.fcurves.find("rotation_euler", index=2) is not None:
         _write_obj_prop_at_current_frame(obj, anim_data.rot_z_channel, math.degrees(obj.rotation_euler.z))
-    if fcurves.find("scale", index=0) is not None:
+    if channelbag.fcurves.find("scale", index=0) is not None:
         _write_obj_prop_at_current_frame(obj, anim_data.scale_x_channel, obj.scale.x)
-    if fcurves.find("scale", index=1) is not None:
+    if channelbag.fcurves.find("scale", index=1) is not None:
         _write_obj_prop_at_current_frame(obj, anim_data.scale_y_channel, obj.scale.y)
-    if fcurves.find("scale", index=2) is not None:
+    if channelbag.fcurves.find("scale", index=2) is not None:
         _write_obj_prop_at_current_frame(obj, anim_data.scale_z_channel, obj.scale.z)
 
 def _generate_anim_channel_xml(parent_xml, anim_channel: AnimData.Channel, name):

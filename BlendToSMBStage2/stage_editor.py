@@ -18,6 +18,7 @@ from .descriptors import descriptors, descriptor_item_group, descriptor_model_st
 from bpy.props import BoolProperty, PointerProperty, EnumProperty, FloatProperty, FloatVectorProperty, IntProperty
 from sys import platform
 from mathutils import Vector, Matrix
+from bpy_extras import anim_utils
 
 import xml.etree.ElementTree as etree
 import xml.dom.minidom as minidom
@@ -826,8 +827,13 @@ class OBJECT_OT_generate_texture_scroll_preview(bpy.types.Operator):
                 offset[0] = u_end
                 offset[1] = v_end
                 offset.data.keyframe_insert('offset', frame=frame_end)
-                
-                for fcurve in obj.animation_data.action.fcurves:
+
+                action = obj.animation_data.action
+                action_slot = obj.animation_data.action_slot
+                channelbag = anim_utils.action_get_channelbag_for_slot(action, action_slot)
+                fcurves = channelbag.fcurves
+
+                for fcurve in fcurves:
                     if 'texScrollModifier' in fcurve.data_path:
                         for keyframe in fcurve.keyframe_points:
                             keyframe.interpolation = 'LINEAR'
@@ -1044,7 +1050,12 @@ class OBJECT_OT_export_obj(bpy.types.Operator):
             if obj.animation_data is not None and obj.animation_data.action is not None:
                 orig_matrix_dict[obj.name] = copy.copy(obj.matrix_world)
                 print("\tMoving object " + obj.name + " to origin for export")
-                fcurves = obj.animation_data.action.fcurves
+
+                action = obj.animation_data.action
+                action_slot = obj.animation_data.action_slot
+                channelbag = anim_utils.action_get_channelbag_for_slot(action, action_slot)
+                fcurves  = channelbag.fcurves
+
                 orig_pos = [None, None, None]
                 orig_rot = [None, None, None]
                 orig_scale = [None, None, None]
@@ -1197,7 +1208,12 @@ class OBJECT_OT_export_obj(bpy.types.Operator):
         for obj in bg_fg_models:
             if obj.animation_data is not None and obj.animation_data.action is not None:
                 print("\tRestoring position and animation of " + obj.name)
-                fcurves  = obj.animation_data.action.fcurves
+
+                action = obj.animation_data.action
+                action_slot = obj.animation_data.action_slot
+                channelbag = anim_utils.action_get_channelbag_for_slot(action, action_slot)
+                fcurves  = channelbag.fcurves
+
                 # Position keyframes
                 for index in [0, 1, 2]:
                     fcurve = fcurves.find("location", index=index)
@@ -1536,7 +1552,11 @@ class OBJECT_OT_export_background(bpy.types.Operator):
         for exp in itertools.chain(fg_export_datas, bg_export_datas):
             if exp.obj.animation_data is not None and exp.obj.animation_data.action is not None:
                 channels_with_frame_zero_keyframes = []
-                fcurves = exp.obj.animation_data.action.fcurves
+
+                action = exp.obj.animation_data.action
+                action_slot = exp.obj.animation_data.action_slot
+                channelbag = anim_utils.action_get_channelbag_for_slot(action, action_slot)
+                fcurves = channelbag.fcurves
 
                 # Find existing channels with frame 0 keyframes
                 for (index, curve_type) in all_curve_types:
@@ -1892,7 +1912,11 @@ class OBJECT_OT_generate_config(bpy.types.Operator):
         for exp in itertools.chain(ig_export_datas, fg_export_datas, bg_export_datas):
             if exp.obj.animation_data is not None and exp.obj.animation_data.action is not None:
                 channels_with_frame_zero_keyframes = []
-                fcurves = exp.obj.animation_data.action.fcurves
+
+                action = exp.obj.animation_data.action
+                action_slot = exp.obj.animation_data.action_slot
+                channelbag = anim_utils.action_get_channelbag_for_slot(action, action_slot)
+                fcurves = channelbag.fcurves
 
                 # Find existing channels with frame 0 keyframes
                 for (index, curve_type) in all_curve_types:
