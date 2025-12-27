@@ -14,7 +14,7 @@ bl_info = {
     "description": "Addon for creating Super Monkey Ball stage configuration files",
     "author": "CraftedCart, The BombSquad",
     "version": (2, 2),
-    "blender": (4, 1, 1),
+    "blender": (4, 5, 0),
     "location": "\"Blend2SMB\" vertical tab in 3D viewport",
     "category": "3D View",
     "doc_url": "https://docs.google.com/document/d/194QZxrimkjHEzSSMKbafs86PnmiYmFBZUnoaEnks4es",
@@ -232,60 +232,70 @@ def register():
             name="Config Export Path",
             description="The path to export the config to",
             subtype='FILE_PATH',
+            options={'PATH_SUPPORTS_BLEND_RELATIVE'},
             default="//config.xml"
     )
     bpy.types.Scene.export_model_path = bpy.props.StringProperty(
             name="Model Export Path",
             description="The path to export the model to",
             subtype='FILE_PATH',
+            options={'PATH_SUPPORTS_BLEND_RELATIVE'},
             default="//model.obj"
     )
     bpy.types.Scene.export_gma_path = bpy.props.StringProperty(
             name="GMA Export Path",
             description="The path to export the model to",
             subtype='FILE_PATH',
+            options={'PATH_SUPPORTS_BLEND_RELATIVE'},
             default="//model.gma"
     )
     bpy.types.Scene.export_tpl_path = bpy.props.StringProperty(
             name="TPL Export Path",
             description="The path to export the model to",
             subtype='FILE_PATH',
+            options={'PATH_SUPPORTS_BLEND_RELATIVE'},
             default="//model.tpl"
     )
     bpy.types.Scene.export_raw_stagedef_path = bpy.props.StringProperty(
             name="LZ.RAW Export Path",
             description="The path to export the raw stagedef to",
             subtype='FILE_PATH',
+            options={'PATH_SUPPORTS_BLEND_RELATIVE'},
             default="//stagedef.lz.raw"
     )
     bpy.types.Scene.export_stagedef_path = bpy.props.StringProperty(
             name="LZ Export Path",
             description="The path to export the compressed stagedef to",
             subtype='FILE_PATH',
+            options={'PATH_SUPPORTS_BLEND_RELATIVE'},
             default="//stagedef.lz"
     )
     bpy.types.Scene.export_background_path = bpy.props.StringProperty(
             name="Background Export Path",
             description="The path to export the background config to",
             subtype='FILE_PATH',
+            options={'PATH_SUPPORTS_BLEND_RELATIVE'},
             default="//background.bg.xml"
     )
     bpy.types.Scene.import_gma_path = bpy.props.StringProperty(
             name="External GMA Import Path",
             description="The path to an external GMA to import",
             subtype='FILE_PATH',
+            options={'PATH_SUPPORTS_BLEND_RELATIVE'},
             default=""
     )
     bpy.types.Scene.import_tpl_path = bpy.props.StringProperty(
             name="External TPL Import Path",
             description="The path to an external TPL to import",
             subtype='FILE_PATH',
+            options={'PATH_SUPPORTS_BLEND_RELATIVE'},
             default=""
     )
     bpy.types.Scene.gx_preset_path = bpy.props.StringProperty(
             name="Flag Preset Folder",
             description="The path to a folder containg GxModelViewer presets.",
             subtype='DIR_PATH',
+            options={'PATH_SUPPORTS_BLEND_RELATIVE'},
             default="//"
     )
     bpy.types.Scene.falloutProp = bpy.props.IntProperty(
@@ -365,6 +375,7 @@ def register():
             name="BG Import Path",
             description="The path to a .XML background file to import",
             subtype='FILE_PATH',
+            options={'PATH_SUPPORTS_BLEND_RELATIVE'},
             default=""
     )
     bpy.types.Scene.background_import_preview = bpy.props.BoolProperty(
