@@ -90,7 +90,7 @@ jobs:
         copy -Force -Path ..\README.md -Destination .\artifacts
         7z.exe a ..\GxUtils-Windows.zip .\artifacts\* "-x!*.config"
         
-    - uses: actions/upload-artifact@v3.1.2
+    - uses: actions/upload-artifact@v6.0.0
       with:
         # Artifact name
         name: gx-out
