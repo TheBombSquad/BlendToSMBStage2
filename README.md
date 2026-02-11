@@ -18,6 +18,7 @@ This plugin utilizes the custom level tools [SMB Workshop 2](https://gitlab.com/
 and [GxUtils](https://github.com/TheBombSquad/GxUtils) for generating stage configuration and model files compatible
 with the original game. This plugin started as a re-write and port of CraftedCart's Blend2SMBStage plugin for Blender 2.7x
 with extended functionality.
+
 The original version of the plugin can be found [here.](https://gitlab.com/CraftedCart/BlendToSMBStage)
 
 The latest version of CraftedCart's SMB Workshop 2 is built in, but can be separately downloaded [here.](https://craftedcart.gitlab.io/ws2web/#/download)
@@ -28,7 +29,7 @@ A guide to the usage of this tool, along with documentation in regards to Monkey
 
 ## Setup
 ### Installation
-[The latest version of the plugin can be downloaded at this link](https://github.com/TheBombSquad/GxUtils/releases/latest). You do not need to extract the files in the
+[The latest version of the plugin can be downloaded at this link](https://github.com/TheBombSquad/BlendToSMBStage2/releases/latest). You do not need to extract the files in the
 downloaded .zip file. Open Blender (any version later than 4.1.1), and go to Edit-\>Preferences in the menu bar. 
 Go to the 'Add-ons' tab, and select 'Install...'. Navigate to, and select the downloaded .zip file. Search for
 "BlendToSMBStage2" in the Add-ons list, and then tick the checkmark next to the addon. The add-on will then be installed. 
@@ -181,6 +182,6 @@ the "Draw Stage Objects" button to make them show up.
 
 ## Special Thanks
 
-Thanks to [ComplexPlane](https://github.com/ComplexPlane), [alion8me](https://github.com/alion8me), [CraftedCart](https://github.com/CraftedCart/), [dannymcgarvey](https://github.com/dannymcgarvey) and [Cutsman-Sam](https://github.com/cutsman-sam) for their code contributions to this project!
+Thanks to [ComplexPlane](https://github.com/ComplexPlane), [alion8me](https://github.com/alion8me), [CraftedCart](https://github.com/CraftedCart/), [dannymcgarvey](https://github.com/dannymcgarvey), [Cutsman-Sam](https://github.com/cutsman-sam), and [Eucalyptus](https://github.com/Eucalyptusmoon), for their code contributions to this project!
 
 Thanks to [CraftedCart](https://github.com/CraftedCart/) for the logo design!
