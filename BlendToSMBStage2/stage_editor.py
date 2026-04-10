@@ -1021,9 +1021,9 @@ class OBJECT_OT_root_update_exports(bpy.types.Operator):
     def execute(self, context):
         root_path = context.scene.export_root_path
         stage_id = f"{context.scene.export_root_stage_id:03}"
-        gma_path = f"{root_path}/st{stage_id}.gma"
-        tpl_path = f"{root_path}/st{stage_id}.tpl"
-        lz_path = f"{root_path}/STAGE{stage_id}.lz"
+        gma_path = f"{root_path}st{stage_id}.gma"
+        tpl_path = f"{root_path}st{stage_id}.tpl"
+        lz_path = f"{root_path}STAGE{stage_id}.lz"
         context.scene.export_gma_path = gma_path
         context.scene.export_tpl_path = tpl_path
         context.scene.export_stagedef_path = lz_path
