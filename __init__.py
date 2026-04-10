@@ -228,6 +228,19 @@ def register():
             default=3,
             soft_min=0
     )
+    bpy.types.Scene.export_root_path = bpy.props.StringProperty(
+            name="Root Stage Folder Path",
+            description="The root's stage folder to export the stage to",
+            subtype='DIR_PATH',
+            options={'PATH_SUPPORTS_BLEND_RELATIVE'},
+            default="//"
+    )
+    bpy.types.Scene.export_root_stage_id = bpy.props.IntProperty(
+            name="StageID",
+            description="The ID of the stage to export to",
+            default=1,
+            soft_min=1
+    )
     bpy.types.Scene.export_config_path = bpy.props.StringProperty(
             name="Config Export Path",
             description="The path to export the config to",
@@ -422,6 +435,8 @@ def unregister():
     del bpy.types.Scene.export_timestep
     del bpy.types.Scene.export_value_round
     del bpy.types.Scene.export_time_round
+    del bpy.types.Scene.export_root_path
+    del bpy.types.Scene.export_root_stage_id
     del bpy.types.Scene.export_config_path
     del bpy.types.Scene.export_model_path
     del bpy.types.Scene.export_gma_path
