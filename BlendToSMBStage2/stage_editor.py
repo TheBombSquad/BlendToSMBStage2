@@ -494,6 +494,10 @@ class VIEW3D_PT_4_export_panel(bpy.types.Panel):
         layout.prop(context.scene, "export_timestep")
         layout.prop(context.scene, "export_value_round")
         layout.prop(context.scene, "export_time_round")
+        layout.label(text="Root Export Paths")
+        layout.prop(context.scene, "export_root_path")
+        layout.prop(context.scene, "export_root_stage_id")
+        layout.operator("object.root_export_path_update", text="Update Stage Export Paths With ID")
         layout.label(text="Export Paths")
         layout.prop(context.scene, "export_config_path")
         layout.prop(context.scene, "export_model_path")
@@ -1005,6 +1009,24 @@ class OBJECT_OT_set_backface_culling(bpy.types.Operator):
             if hasattr(mat, 'use_backface_culling'):
                 mat.use_backface_culling = True
 
+        return {'FINISHED'}
+
+# Updates export paths with specified root and stage ID
+class OBJECT_OT_root_update_exports(bpy.types.Operator):
+    bl_idname = "object.root_export_path_update"
+    bl_label = "Update Stage Export Paths With ID"
+    bl_description = "Update paths to use the specified root path and stage ID"
+    bl_options = {'UNDO'} 
+
+    def execute(self, context):
+        root_path = context.scene.export_root_path
+        stage_id = f"{context.scene.export_root_stage_id:03}"
+        gma_path = f"{root_path}st{stage_id}.gma"
+        tpl_path = f"{root_path}st{stage_id}.tpl"
+        lz_path = f"{root_path}STAGE{stage_id}.lz"
+        context.scene.export_gma_path = gma_path
+        context.scene.export_tpl_path = tpl_path
+        context.scene.export_stagedef_path = lz_path
         return {'FINISHED'}
 
 # Operator for exporting the stage model as a .OBJ file
